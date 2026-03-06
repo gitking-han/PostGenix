@@ -71,7 +71,7 @@ postgenix/
 
 ```
 
-git clone [https://github.com/gitking-han/postgenix.git](https://github.com/gitking-han/postgenix.git)
+git clone [https://github.com/gitking-han/PostGenix.git](https://github.com/gitking-han/PostGenix.git)
 
 ```
 
