@@ -1,10 +1,12 @@
-Here is a **clean professional README.md** you can use for **PostGenix**. It’s written like a **real SaaS project**, which also helps when people visit your GitHub.
+
 
 ```markdown
 # PostGenix
 
 PostGenix is an AI-powered platform that helps creators generate high-performing LinkedIn content.  
 It analyzes profiles, understands tone, and generates optimized posts that increase reach and engagement.
+
+---
 
 ## 🚀 Features
 
@@ -14,6 +16,8 @@ It analyzes profiles, understands tone, and generates optimized posts that incre
 - Content optimization for engagement
 - Simple and clean dashboard
 - Fast generation using modern AI models
+
+---
 
 ## 🛠 Tech Stack
 
@@ -32,6 +36,8 @@ It analyzes profiles, understands tone, and generates optimized posts that incre
 ### AI
 - OpenAI API
 
+---
+
 ## 📂 Project Structure
 
 ```
@@ -45,8 +51,8 @@ postgenix/
 │   ├── utils
 │   ├── models
 │   ├── middleware
-│   └── db.js
-    └── index.js
+│   ├── db.js
+│   └── index.js
 │
 ├── frontend/          # React application
 │   ├── src
@@ -57,17 +63,19 @@ postgenix/
 
 ```
 
+---
+
 ## ⚙️ Installation
 
 ### 1. Clone the repository
 
 ```
 
-git clone [https://github.com/yourusername/postgenix.git](https://github.com/yourusername/postgenix.git)
+git clone [https://github.com/gitking-han/postgenix.git](https://github.com/gitking-han/postgenix.git)
 
 ```
 
-### 2. Navigate to project
+### 2. Navigate to the project
 
 ```
 
@@ -93,47 +101,61 @@ npm install
 
 ```
 
+---
+
 ## 🔑 Environment Variables
 
-1. Create a `.env` file inside the backend folder.
+### Backend `.env`
 
-Example:
+Create a `.env` file inside the **backend** folder.
 
 ```
 
 PORT=5000
 MONGO_URI=your_mongodb_connection
 JWT_SECRET=your_secret_key
+
 GOOGLE_CLIENT_ID=your_google_clientID
-GOOGLE_CLIENT_SECRET=your_google_client-secret
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+
 LINKEDIN_CLIENT_ID=your_linkedin_clientID
-LINKEDIN_CLIENT_SECRET=your_linkedIN_clientSecret
-BASE_URL=http://localhost:5000
-FRONTEND_URL=http://localhost:8080
+LINKEDIN_CLIENT_SECRET=your_linkedin_clientSecret
 LINKEDIN_REDIRECT_URI=your_linkedin_redirectURI
-EMAIL_USER=Your_email
+
+BASE_URL=[http://localhost:5000](http://localhost:5000)
+FRONTEND_URL=[http://localhost:8080](http://localhost:8080)
+
+EMAIL_USER=your_email
 EMAIL_PASS=your_email_password
-retryWrites=true&w=majority
-PADDLE_API_KEY=your_paddle_apiKey
+
+PADDLE_API_KEY=your_paddle_api_key
 PADDLE_WEBHOOK_SECRET=your_paddle_webhook_secret
-AWS_ACCESS_KEY_ID=aws_access_key_id
+
+AWS_ACCESS_KEY_ID=your_aws_access_key_id
 AWS_SECRET_ACCESS_KEY=your_aws_secret_access_key
-AWS_SESSION_TOKEN=your_aws_sessionToken
+AWS_SESSION_TOKEN=your_aws_session_token
 AWS_REGION=us-east-1
-```
-
-2. Create a `.env` file inside the frontend folder.
-
-Example:
 
 ```
 
-VITE_API_URL=http://localhost:5000
-VITE_PADDLE_PRO_PRICE_ID=your_paddle_productPrice
-VITE_PADDLE_CLIENT_TOKEN=your_paddle_clientToken
+---
+
+### Frontend `.env`
+
+Create a `.env` file inside the **frontend** folder.
+
+```
+
+VITE_API_URL=[http://localhost:5000](http://localhost:5000)
+VITE_PADDLE_PRO_PRICE_ID=your_paddle_product_price
+VITE_PADDLE_CLIENT_TOKEN=your_paddle_client_token
+
 VITE_LINKEDIN_CLIENT_ID=your_linkedin_clientID
 VITE_LINKEDIN_REDIRECT_URI=your_linkedin_redirect_uri
+
 ```
+
+---
 
 ## ▶️ Running the Project
 
@@ -171,6 +193,8 @@ Backend will run on:
 
 ```
 
+---
+
 ## 📌 Future Improvements
 
 - Content performance analytics
@@ -178,17 +202,22 @@ Backend will run on:
 - AI hook generator
 - Multi-platform support (Twitter, Instagram)
 
+---
+
 ## 🤝 Contributing
 
 Contributions are welcome.  
 Feel free to open issues or submit pull requests.
 
+---
+
 ## 📄 License
 
-This project is licensed under the MIT License.
+This project is licensed under the **MIT License**.
 
-
+---
 
 Built with ❤️ to help creators grow on LinkedIn.
+```
 
-
+---
