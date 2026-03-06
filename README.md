@@ -120,6 +120,7 @@ AWS_ACCESS_KEY_ID=aws_access_key_id
 AWS_SECRET_ACCESS_KEY=your_aws_secret_access_key
 AWS_SESSION_TOKEN=your_aws_sessionToken
 AWS_REGION=us-east-1
+```
 
 2. Create a `.env` file inside the frontend folder.
 
@@ -186,8 +187,8 @@ Feel free to open issues or submit pull requests.
 
 This project is licensed under the MIT License.
 
----
+
 
 Built with ❤️ to help creators grow on LinkedIn.
-```
+
 
