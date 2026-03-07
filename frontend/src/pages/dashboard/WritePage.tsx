@@ -618,7 +618,7 @@ export default function WritePage() {
                                   {isAgentActing === msg.id
                                     ? "Agent Acting..."
                                     : isLinkedInConnected
-                                      ? (msg.lastLinkedinUrl ? "Post Again" : "Draft to LinkedIn")
+                                      ? (msg.lastLinkedinUrl ? "Post Again" : "Post to LinkedIn")
                                       : "Connect LinkedIn" // Clear Call to Action
                                   }
                                 </span>
