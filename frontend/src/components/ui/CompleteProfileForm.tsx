@@ -105,8 +105,8 @@ export function CompleteProfileForm({
         },
         location: { city: form.city, country: form.country },
       };
-
-      const res = await fetch(`http://localhost:5000/api/profile/complete`, {
+ 
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/profile/me`, {
         method: "PUT",
         headers: { "Content-Type": "application/json", "auth-token": token },
         body: JSON.stringify(payload),
