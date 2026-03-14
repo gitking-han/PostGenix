@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/api/(.*)",
+      "destination": "https://gwevnchmaf.us-east-1.awsapprunner.com/api/$1"
+    },
+    {
       "source": "/(.*)",
       "destination": "/"
     }
