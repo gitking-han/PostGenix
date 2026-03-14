@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Ghost, ArrowRight, Eye, EyeOff } from "lucide-react";
+import { Ghost, ArrowRight, Eye, EyeOff, AlertCircle } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
 import { Moon, Sun } from "lucide-react";
 import { toast } from "sonner";
@@ -13,20 +13,20 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const { theme, setTheme } = useTheme();
-const BACKEND_URL = import.meta.env.VITE_API_URL;
+  const BACKEND_URL = import.meta.env.VITE_API_URL;
 
-// Remove the BACKEND_URL logic. Just use the local path.
-const handleGoogleLogin = () => {
-  // Vite will see /api and automatically proxy this to localhost:5000
-  window.location.href = "/api/auth/google"; 
-};
+  // Remove the BACKEND_URL logic. Just use the local path.
+  const handleGoogleLogin = () => {
+    // Vite will see /api and automatically proxy this to localhost:5000
+    window.location.href = "/api/auth/google";
+  };
 
-const handleLinkedInLogin = () => {
-  window.location.href = "/api/auth/linkedin";
-};
+  const handleLinkedInLogin = () => {
+    window.location.href = "/api/auth/linkedin";
+  };
 
 
-  const handleSubmit = async (e) => { 
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     try {
@@ -84,6 +84,24 @@ const handleLinkedInLogin = () => {
                 Post<span className="text-accent">Genix</span>
               </span>
             </Link>
+            <div className="mb-6 p-4 rounded-lg bg-amber-500/10 border border-amber-500/30 text-sm">
+              <div className="flex gap-3">
+                <AlertCircle className="w-5 h-5 text-amber-500 shrink-0" />
+                <div>
+                  <p className="font-bold text-amber-600 dark:text-amber-400 mb-1">
+                    Important for Hackathon Judges
+                  </p>
+                  <p className="text-muted-foreground leading-relaxed">
+                    AI generation relies on temporary AWS credentials. If generation is unresponsive,
+                    the session has likely expired—<span className="font-bold text-foreground underline">please refer to our demo video to see PostGenix in action.</span>
+                  </p>
+                  <div className="mt-2 pt-2 border-t border-amber-500/20 text-foreground font-mono">
+                    <p>Email: <span className="text-accent">testing@gmail.com</span></p>
+                    <p>Pass: <span className="text-accent">testing1122</span></p>
+                  </div>
+                </div>
+              </div>
+            </div>
 
             <h1 className="text-3xl font-bold text-foreground mb-2">Welcome back</h1>
             <p className="text-muted-foreground mb-8">

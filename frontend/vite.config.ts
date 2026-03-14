@@ -11,7 +11,7 @@ export default defineConfig(({ mode }) => ({
     // ADD THIS PROXY BLOCK HERE:
     proxy: {
       '/api': {
-        target: 'http://localhost:5000',
+        target: 'https://gwevnchmaf.us-east-1.awsapprunner.com',
         changeOrigin: true,
         secure: false,
       },
