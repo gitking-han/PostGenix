@@ -70,6 +70,16 @@ router.post('/createuser', [
     const errors = validationResult(req);
     if (!errors.isEmpty()) return res.status(400).json({ success: false, errors: errors.array() });
     let user = await User.findOne({ email: req.body.email });
+    let profile = await Profile.findOne({ userId: user._id });
+    const username = profile?.username || await generateUsername(user.name?.split(' ')[0], user.name?.split(' ')[1]);
+    await Profile.findOneAndUpdate(
+      { userId: user._id },
+      {
+        $setOnInsert: { firstName: user.name?.split(' ')[0] || '', lastName: user.name?.split(' ')[1] || '', avatarUrl: user.googlePhoto || '', username, headline: 'Content Creator | PostGenix', isPublic: true },
+        $set: { email: user.email }
+      },
+      { new: true, upsert: true }
+    );
     if (user) return res.status(400).json({ success: false, error: "User with this email already exists" });
     const salt = await bcrypt.genSalt(10);
     const secPass = await bcrypt.hash(req.body.password, salt);
