@@ -61,6 +61,7 @@ async function generateUsername(firstName = '', lastName = '') {
 // ==========================
 // Route 1 & 2: Create & Login (Kept as is)
 // ==========================
+
 router.post('/createuser', [
   body('name', 'Enter a valid name').isLength({ min: 3 }),
   body('email', 'Enter a valid Email').isEmail(),
@@ -69,15 +70,51 @@ router.post('/createuser', [
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) return res.status(400).json({ success: false, errors: errors.array() });
+
+    // Check if user exists
     let user = await User.findOne({ email: req.body.email });
     if (user) return res.status(400).json({ success: false, error: "User with this email already exists" });
+
+    // Hash Password
     const salt = await bcrypt.genSalt(10);
     const secPass = await bcrypt.hash(req.body.password, salt);
-    user = await User.create({ name: req.body.name, email: req.body.email, password: secPass });
+
+    // 1. Create the User
+    user = await User.create({
+      name: req.body.name,
+      email: req.body.email,
+      password: secPass
+    });
+
+    // --- NEW PROFILE LOGIC START ---
+
+    // 2. Prepare Name and Username
+    const nameParts = req.body.name.split(' ');
+    const firstName = nameParts[0] || '';
+    const lastName = nameParts.slice(1).join(' ') || ''; // Captures middle/last names
+    const username = await generateUsername(firstName, lastName);
+
+    // 3. Create the Profile automatically
+    await Profile.create({
+      userId: user.id,
+      firstName: firstName,
+      lastName: lastName,
+      email: user.email,
+      username: username,
+      headline: 'Content Creator | PostGenix',
+      isPublic: true,
+      avatarUrl: '' // Default empty or a placeholder URL
+    });
+
+    // --- NEW PROFILE LOGIC END ---
+
+    // Generate JWT
     const authToken = jwt.sign({ user: { id: user.id } }, JWT_SECRET);
     res.json({ success: true, authToken });
+
   } catch (error) {
-    res.status(500).send({ message: 'Failed to create user' });
+    console.error(error.message);
+    res.status(500).send({ success: false, message: 'Failed to create user and profile' });
   }
 });
 
@@ -301,12 +338,12 @@ router.delete('/delete-account', fetchuser, async (req, res) => {
     const deletedUser = await User.findByIdAndDelete(userId);
 
     if (!deletedUser) {
-        return res.status(404).json({ message: "User not found" });
+      return res.status(404).json({ message: "User not found" });
     }
 
-    res.json({ 
-      success: true, 
-      message: "Account and all associated data (posts, conversations, settings, profile) have been purged." 
+    res.json({
+      success: true,
+      message: "Account and all associated data (posts, conversations, settings, profile) have been purged."
     });
 
   } catch (error) {
@@ -333,8 +370,8 @@ router.get('/get-user', fetchuser, async (req, res) => {
     const showSpotlight = user.onboarding?.showProfileGuide && !user.onboarding?.hasCompletedProfile;
 
     res.json({
-        ...user._doc,
-        showSpotlight // Simple true/false for the frontend
+      ...user._doc,
+      showSpotlight // Simple true/false for the frontend
     });
 
   } catch (error) {
@@ -350,19 +387,19 @@ router.get('/get-user', fetchuser, async (req, res) => {
  * @desc    Connect LinkedIn for AI Agent (Logged-in user)
  */
 router.get('/linkedin/connect', fetchuser, (req, res) => {
-    const userId = req.user.id.toString(); 
-    const redirectUri = `${process.env.BASE_URL}/api/auth/linkedin/callback`;
-    const scope = "openid profile email w_member_social";
-    
-    const authUrl = `https://www.linkedin.com/oauth/v2/authorization?` + 
-                    `response_type=code&` +
-                    `client_id=${process.env.LINKEDIN_CLIENT_ID}&` +
-                    `redirect_uri=${encodeURIComponent(redirectUri)}&` +
-                    `state=${userId}&` + 
-                    `scope=${encodeURIComponent(scope)}`;
-    
-    console.log("LOG: Initiating LinkedIn Connect for User:", userId);
-    res.redirect(authUrl);
+  const userId = req.user.id.toString();
+  const redirectUri = `${process.env.BASE_URL}/api/auth/linkedin/callback`;
+  const scope = "openid profile email w_member_social";
+
+  const authUrl = `https://www.linkedin.com/oauth/v2/authorization?` +
+    `response_type=code&` +
+    `client_id=${process.env.LINKEDIN_CLIENT_ID}&` +
+    `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+    `state=${userId}&` +
+    `scope=${encodeURIComponent(scope)}`;
+
+  console.log("LOG: Initiating LinkedIn Connect for User:", userId);
+  res.redirect(authUrl);
 });
 
 /**
@@ -370,10 +407,10 @@ router.get('/linkedin/connect', fetchuser, (req, res) => {
  * @desc    Login via LinkedIn (Logged-out user)
  */
 router.get('/linkedin', (req, res) => {
-    const redirectUri = `${process.env.BASE_URL}/api/auth/linkedin/callback`;
-    const scope = "openid profile email"; // Minimum scope for login
-    const authUrl = `https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=${process.env.LINKEDIN_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}`;
-    res.redirect(authUrl);
+  const redirectUri = `${process.env.BASE_URL}/api/auth/linkedin/callback`;
+  const scope = "openid profile email"; // Minimum scope for login
+  const authUrl = `https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=${process.env.LINKEDIN_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}`;
+  res.redirect(authUrl);
 });
 
 /**
@@ -381,107 +418,107 @@ router.get('/linkedin', (req, res) => {
  * @desc    SINGLE Unified Callback handler
  */
 router.get('/linkedin/callback', async (req, res) => {
-    const { code, state, error, error_description } = req.query;
+  const { code, state, error, error_description } = req.query;
 
-    console.log("!!! LINKEDIN CALLBACK REACHED !!!");
+  console.log("!!! LINKEDIN CALLBACK REACHED !!!");
 
-    if (error) {
-        console.error("LinkedIn OAuth Error:", error, error_description);
-        return res.redirect(`${process.env.FRONTEND_URL}/login?error=${error}`);
-    }
+  if (error) {
+    console.error("LinkedIn OAuth Error:", error, error_description);
+    return res.redirect(`${process.env.FRONTEND_URL}/login?error=${error}`);
+  }
 
-    if (!code) return res.redirect(`${process.env.FRONTEND_URL}/login?error=no_code`);
+  if (!code) return res.redirect(`${process.env.FRONTEND_URL}/login?error=no_code`);
 
-    try {
-        console.log("LOG: Exchanging code for Access Token...");
+  try {
+    console.log("LOG: Exchanging code for Access Token...");
 
-        // FIX: Use URLSearchParams to send data in the REQUEST BODY (Fixes "code not found" error)
-        const params = new URLSearchParams();
-        params.append('grant_type', 'authorization_code');
-        params.append('code', code);
-        params.append('client_id', process.env.LINKEDIN_CLIENT_ID);
-        params.append('client_secret', process.env.LINKEDIN_CLIENT_SECRET);
-        params.append('redirect_uri', `${process.env.BASE_URL}/api/auth/linkedin/callback`);
+    // FIX: Use URLSearchParams to send data in the REQUEST BODY (Fixes "code not found" error)
+    const params = new URLSearchParams();
+    params.append('grant_type', 'authorization_code');
+    params.append('code', code);
+    params.append('client_id', process.env.LINKEDIN_CLIENT_ID);
+    params.append('client_secret', process.env.LINKEDIN_CLIENT_SECRET);
+    params.append('redirect_uri', `${process.env.BASE_URL}/api/auth/linkedin/callback`);
 
-        const tokenResponse = await axios.post('https://www.linkedin.com/oauth/v2/accessToken', params, {
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+    const tokenResponse = await axios.post('https://www.linkedin.com/oauth/v2/accessToken', params, {
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+    });
+
+    const accessToken = tokenResponse.data.access_token;
+    console.log("LOG: Access Token obtained.");
+
+    // Fetch user profile
+    const userRes = await axios.get('https://api.linkedin.com/v2/userinfo', {
+      headers: { Authorization: `Bearer ${accessToken}` }
+    });
+
+    const { sub, name, email, given_name, family_name, picture } = userRes.data;
+    const personUrn = `urn:li:person:${sub}`;
+
+    if (state) {
+      // SCENARIO: AGENT CONNECTION (User was already logged in)
+      console.log("LOG: Updating existing user with LinkedIn Keys. ID:", state);
+
+      const updatedUser = await User.findByIdAndUpdate(state, {
+        $set: {
+          'linkedin.accessToken': accessToken,
+          'linkedin.personUrn': personUrn,
+          'linkedin.profileName': name,
+          'linkedin.isConnected': true
+        }
+      }, { new: true });
+
+      if (updatedUser) {
+        console.log("LOG: SUCCESS! Database updated for:", updatedUser.email);
+      } else {
+        console.error("LOG: User ID from state not found in database.");
+      }
+
+      return res.redirect(`${process.env.FRONTEND_URL}/dashboard/settings?linkedin=connected`);
+
+    } else {
+      // SCENARIO: STANDARD LOGIN
+      console.log("LOG: Processing LinkedIn Login for:", email);
+      let user = await User.findOne({ email });
+
+      if (!user) {
+        const username = await generateUsername(given_name, family_name);
+        user = await User.create({
+          name: name,
+          email: email,
+          password: crypto.randomBytes(16).toString('hex'),
+          linkedin: { accessToken, personUrn, profileName: name, isConnected: true }
         });
 
-        const accessToken = tokenResponse.data.access_token;
-        console.log("LOG: Access Token obtained.");
-
-        // Fetch user profile
-        const userRes = await axios.get('https://api.linkedin.com/v2/userinfo', {
-            headers: { Authorization: `Bearer ${accessToken}` }
+        await Profile.create({
+          userId: user._id,
+          firstName: given_name,
+          lastName: family_name,
+          avatarUrl: picture,
+          username,
+          isPublic: true
         });
+      } else {
+        // Refresh tokens even on login
+        user.linkedin.accessToken = accessToken;
+        user.linkedin.personUrn = personUrn;
+        user.linkedin.isConnected = true;
+        await user.save();
+      }
 
-        const { sub, name, email, given_name, family_name, picture } = userRes.data;
-        const personUrn = `urn:li:person:${sub}`;
-
-        if (state) {
-            // SCENARIO: AGENT CONNECTION (User was already logged in)
-            console.log("LOG: Updating existing user with LinkedIn Keys. ID:", state);
-
-            const updatedUser = await User.findByIdAndUpdate(state, {
-                $set: {
-                    'linkedin.accessToken': accessToken,
-                    'linkedin.personUrn': personUrn,
-                    'linkedin.profileName': name,
-                    'linkedin.isConnected': true
-                }
-            }, { new: true });
-
-            if (updatedUser) {
-                console.log("LOG: SUCCESS! Database updated for:", updatedUser.email);
-            } else {
-                console.error("LOG: User ID from state not found in database.");
-            }
-
-            return res.redirect(`${process.env.FRONTEND_URL}/dashboard/settings?linkedin=connected`);
-
-        } else {
-            // SCENARIO: STANDARD LOGIN
-            console.log("LOG: Processing LinkedIn Login for:", email);
-            let user = await User.findOne({ email });
-
-            if (!user) {
-                const username = await generateUsername(given_name, family_name);
-                user = await User.create({
-                    name: name,
-                    email: email,
-                    password: crypto.randomBytes(16).toString('hex'),
-                    linkedin: { accessToken, personUrn, profileName: name, isConnected: true }
-                });
-
-                await Profile.create({
-                    userId: user._id,
-                    firstName: given_name,
-                    lastName: family_name,
-                    avatarUrl: picture,
-                    username,
-                    isPublic: true
-                });
-            } else {
-                // Refresh tokens even on login
-                user.linkedin.accessToken = accessToken;
-                user.linkedin.personUrn = personUrn;
-                user.linkedin.isConnected = true;
-                await user.save();
-            }
-
-            const jwtToken = jwt.sign({ user: { id: user._id } }, JWT_SECRET, { expiresIn: '24h' });
-            return res.redirect(`${process.env.FRONTEND_URL}/oauth-success?token=${jwtToken}`);
-        }
-
-    } catch (err) {
-        console.error("LOG: CRITICAL ERROR IN CALLBACK");
-        if (err.response) {
-            console.error("LinkedIn Response:", JSON.stringify(err.response.data, null, 2));
-        } else {
-            console.error(err.message);
-        }
-        res.redirect(`${process.env.FRONTEND_URL}/login?error=linkedin_failed`);
+      const jwtToken = jwt.sign({ user: { id: user._id } }, JWT_SECRET, { expiresIn: '24h' });
+      return res.redirect(`${process.env.FRONTEND_URL}/oauth-success?token=${jwtToken}`);
     }
+
+  } catch (err) {
+    console.error("LOG: CRITICAL ERROR IN CALLBACK");
+    if (err.response) {
+      console.error("LinkedIn Response:", JSON.stringify(err.response.data, null, 2));
+    } else {
+      console.error(err.message);
+    }
+    res.redirect(`${process.env.FRONTEND_URL}/login?error=linkedin_failed`);
+  }
 });
 
 
@@ -490,21 +527,21 @@ router.get('/linkedin/callback', async (req, res) => {
  * @desc    Disconnect LinkedIn and clear tokens
  */
 router.put('/linkedin/disconnect', fetchuser, async (req, res) => {
-    try {
-        await User.findByIdAndUpdate(req.user.id, {
-            $set: {
-                'linkedin.accessToken': null,
-                'linkedin.personUrn': null,
-                'linkedin.profileName': null,
-                'linkedin.isConnected': false
-            }
-        });
+  try {
+    await User.findByIdAndUpdate(req.user.id, {
+      $set: {
+        'linkedin.accessToken': null,
+        'linkedin.personUrn': null,
+        'linkedin.profileName': null,
+        'linkedin.isConnected': false
+      }
+    });
 
-        res.json({ success: true, message: "LinkedIn account disconnected." });
-    } catch (error) {
-        console.error("Disconnect Error:", error);
-        res.status(500).json({ message: "Internal Server Error" });
-    }
+    res.json({ success: true, message: "LinkedIn account disconnected." });
+  } catch (error) {
+    console.error("Disconnect Error:", error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
 });
 
 // ==========================
@@ -522,14 +559,14 @@ router.get('/test', (req, res) => { res.send("Auth router is connected!"); });
  * @desc    Dismiss the floating profile guide permanently
  */
 router.put('/onboarding/dismiss-guide', fetchuser, async (req, res) => {
-    try {
-        await User.findByIdAndUpdate(req.user.id, {
-            $set: { 'onboarding.showProfileGuide': false }
-        });
-        res.json({ success: true, message: "Guide dismissed" });
-    } catch (error) {
-        res.status(500).send("Server Error");
-    }
+  try {
+    await User.findByIdAndUpdate(req.user.id, {
+      $set: { 'onboarding.showProfileGuide': false }
+    });
+    res.json({ success: true, message: "Guide dismissed" });
+  } catch (error) {
+    res.status(500).send("Server Error");
+  }
 });
 
 module.exports = router;
