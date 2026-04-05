@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "https://gwevnchmaf.us-east-1.awsapprunner.com/api/$1"
+      "destination": "https://dgukj39diw.us-east-1.awsapprunner.com/api/$1"
     },
     {
       "source": "/(.*)",
