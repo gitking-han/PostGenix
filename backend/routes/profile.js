@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const Profile = require("../models/Profile");
 const fetchuser = require("../middleware/fetchuser");
+const User = require("../models/User");
 
 const Post = require("../models/Post"); // 1. Import the Post model
 
