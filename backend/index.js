@@ -18,7 +18,7 @@ const port = process.env.PORT || 5000;
 app.use(express.json({
   verify: (req, res, buf) => {
     // This saves the raw bytes as a string before Express touches them
-    if (req.originalUrl === '/api/paddle/webhook') {
+    if (req.originalUrl.includes('/api/paddle/webhook')) {
       req.rawBody = buf.toString();
     }
   }
