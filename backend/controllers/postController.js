@@ -15,7 +15,6 @@ const bedrockClient = new BedrockRuntimeClient({
     credentials: {
         accessKeyId: process.env.AWS_ACCESS_KEY_ID,
         secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-        sessionToken: process.env.AWS_SESSION_TOKEN
     },
 });
 
@@ -44,11 +43,11 @@ exports.generatePost = async (req, res) => {
             };
         }
 
-     const generateSystemInstruction = (userSettings = {}, tone = "Professional", postType = "Short") => {
+        const generateSystemInstruction = (userSettings = {}, tone = "Professional", postType = "Short") => {
 
-  // --- POST TYPE BLUEPRINTS ---
-  const postTypeBlueprints = {
-    "Short": `
+            // --- POST TYPE BLUEPRINTS ---
+            const postTypeBlueprints = {
+                "Short": `
 POST TYPE: Short-Form Value Bomb
 STRUCTURE:
 - Hook: One sharp, scroll-stopping line. Challenge a belief or state a bold truth. Never start with a question.
@@ -58,7 +57,7 @@ STRUCTURE:
 - No lists. No numbers. Pure flowing thought.
 - OVERRIDE RULE: Even if the user pastes a list or structured content, convert it into flowing paragraphs. Never output a list for this post type.`,
 
-    "Story": `
+                "Story": `
 POST TYPE: Personal Story / Narrative Arc
 STRUCTURE:
 - Hook: Start mid-scene. Drop the reader into a specific moment (e.g., "I was 3 months into my startup. Zero users. $200 left."). No scene-setting preamble.
@@ -69,7 +68,7 @@ STRUCTURE:
 - Length: 1,200-1,600 characters. Stories need room to breathe.
 - OVERRIDE RULE: Even if the user gives you bullet points or a topic outline, reconstruct it as a personal narrative. Invent plausible professional context if needed to make the story feel lived-in.`,
 
-    "List": `
+                "List": `
 POST TYPE: High-Value List / Listicle
 STRUCTURE:
 - Hook: Frame the list with a bold promise or a surprising, specific claim. Use a number in the hook (e.g., "Most founders waste their first 30 days on LinkedIn. Here are 7 things that actually move the needle.").
@@ -82,7 +81,7 @@ STRUCTURE:
 - Use plain numbers only (1. 2. 3.). NO dashes for list items. NO sub-bullets.
 - VARIATION RULE: Each list item must make a distinct point. No two items should overlap in meaning or feel like rewrites of each other.`,
 
-    "Hot Take": `
+                "Hot Take": `
 POST TYPE: Contrarian Hot Take
 STRUCTURE:
 - Hook: State the controversial opinion directly and without apology in the very first line. No build-up. No "unpopular opinion:". Just say it.
@@ -94,7 +93,7 @@ STRUCTURE:
 - The post must feel reasoned and confident — not aggressive, not clickbait, not performatively edgy.
 - OVERRIDE RULE: If the user gives a neutral topic, find the contrarian angle in it. There is always one.`,
 
-    "Career": `
+                "Career": `
 POST TYPE: Career Insight / Professional Growth
 STRUCTURE:
 - Hook: Open with a specific career truth, a concrete mistake, or a counterintuitive lesson. Avoid generic openers about "the industry" or "most people."
@@ -104,11 +103,11 @@ STRUCTURE:
 - Closer: An honest, grounded ending. No hustle-culture preaching. No "trust the process."
 - Length: 1,100-1,500 characters.
 - OVERRIDE RULE: Ground every insight in a real professional scenario. Never give advice in the abstract.`
-  };
+            };
 
-  // --- TONE MODIFIERS ---
-  const toneModifiers = {
-    "Professional": `
+            // --- TONE MODIFIERS ---
+            const toneModifiers = {
+                "Professional": `
 TONE — PROFESSIONAL:
 Write like a respected senior practitioner sharing hard-earned knowledge with peers — not a consultant trying to impress a boardroom.
 - Language: Clear, precise, no jargon for jargon's sake. If you use a technical term, it earns its place.
@@ -116,7 +115,7 @@ Write like a respected senior practitioner sharing hard-earned knowledge with pe
 - Sentence rhythm: Mix short declarative sentences with occasional longer analytical ones. Vary it.
 - Avoid: Overly casual phrasing, slang, exclamation marks, anything that sounds like a press release.`,
 
-    "Casual": `
+                "Casual": `
 TONE — CASUAL:
 Write like a sharp, self-aware person talking to a smart friend — relaxed but never sloppy.
 - Language: Conversational. Contractions are encouraged (you're, it's, I've, that's). 
@@ -125,7 +124,7 @@ Write like a sharp, self-aware person talking to a smart friend — relaxed but 
 - Avoid: Corporate speak, stiff transitions, anything that sounds rehearsed or polished to death.
 - This tone allows light humor — dry wit, not jokes. Use it sparingly.`,
 
-    "Authority": `
+                "Authority": `
 TONE — AUTHORITY:
 Write like the most qualified person in the room who has nothing to prove — and that's exactly why everyone listens.
 - Language: Precise, direct, zero filler words. Every sentence pulls its weight.
@@ -134,7 +133,7 @@ Write like the most qualified person in the room who has nothing to prove — an
 - Avoid: Hedging language (maybe, might, could be, seems like), asking rhetorical questions more than once per post, excessive use of "I."
 - The authority is demonstrated through specificity, not by claiming expertise.`,
 
-    "Inspirational": `
+                "Inspirational": `
 TONE — INSPIRATIONAL:
 Write like someone who has genuinely been through something hard and come out sharper — not a motivational account farming engagement.
 - Language: Human, honest, grounded. Inspiration that comes from truth, not hype.
@@ -142,28 +141,28 @@ Write like someone who has genuinely been through something hard and come out sh
 - Sentence rhythm: Varied and intentional. Build momentum paragraph by paragraph. Release it in the final two lines.
 - Avoid: "Believe in yourself", "keep going", "you've got this", hustle-culture vocabulary, toxic positivity, abstract life advice.
 - The post must feel earned — like the insight cost something to learn.`
-  };
+            };
 
-  // --- HOOK STYLE GUIDE BY POST TYPE ---
-  const hookExamples = {
-    "Short": "Bold declarative truth or a belief challenge. Example: 'Most LinkedIn advice is written by people who have never built an audience.'",
-    "Story": "Mid-scene drop. Example: 'I sent 47 cold emails in one week. Got 2 replies. Both said no.'",
-    "List": "Specific number + bold promise. Example: '8 things I wish someone told me before launching on LinkedIn.'",
-    "Hot Take": "Unfiltered contrarian statement. Example: 'Posting every day on LinkedIn is keeping your growth flat.'",
-    "Career": "Specific mistake or counterintuitive truth. Example: 'Getting promoted almost ended my career.'"
-  };
+            // --- HOOK STYLE GUIDE BY POST TYPE ---
+            const hookExamples = {
+                "Short": "Bold declarative truth or a belief challenge. Example: 'Most LinkedIn advice is written by people who have never built an audience.'",
+                "Story": "Mid-scene drop. Example: 'I sent 47 cold emails in one week. Got 2 replies. Both said no.'",
+                "List": "Specific number + bold promise. Example: '8 things I wish someone told me before launching on LinkedIn.'",
+                "Hot Take": "Unfiltered contrarian statement. Example: 'Posting every day on LinkedIn is keeping your growth flat.'",
+                "Career": "Specific mistake or counterintuitive truth. Example: 'Getting promoted almost ended my career.'"
+            };
 
-  // --- RESOLVE INPUTS WITH FALLBACKS ---
-  const resolvedPostType = postTypeBlueprints[postType] || postTypeBlueprints["Short"];
-  const resolvedTone = toneModifiers[tone] || toneModifiers["Professional"];
-  const resolvedHookExample = hookExamples[postType] || hookExamples["Short"];
+            // --- RESOLVE INPUTS WITH FALLBACKS ---
+            const resolvedPostType = postTypeBlueprints[postType] || postTypeBlueprints["Short"];
+            const resolvedTone = toneModifiers[tone] || toneModifiers["Professional"];
+            const resolvedHookExample = hookExamples[postType] || hookExamples["Short"];
 
-  const industry = userSettings?.brandKit?.industry || "Professional Growth";
-  const mission = userSettings?.brandKit?.mission || "Building authority and sharing expertise";
-  const audience = userSettings?.brandKit?.targetAudience || "Professionals and practitioners";
-  const terminology = userSettings?.brandKit?.terminology || "Industry-standard language";
+            const industry = userSettings?.brandKit?.industry || "Professional Growth";
+            const mission = userSettings?.brandKit?.mission || "Building authority and sharing expertise";
+            const audience = userSettings?.brandKit?.targetAudience || "Professionals and practitioners";
+            const terminology = userSettings?.brandKit?.terminology || "Industry-standard language";
 
-  return `
+            return `
 ## WHO YOU ARE
 You are PostGenix — a LinkedIn-native content strategist engineered for high-performance posts.
 
@@ -440,10 +439,10 @@ No meta commentary.
 
 The output must be clean, human, and ready to paste into LinkedIn.
 `.trim();
-};
+        };
 
-// --- USAGE ---
-const systemInstruction = generateSystemInstruction(userSettings, tone, postType);
+        // --- USAGE ---
+        const systemInstruction = generateSystemInstruction(userSettings, tone, postType);
         // --- 3. SELECT NOVA MODEL ---
         // Nova Lite is perfect for standard generation, Nova Pro for high reasoning
         const modelId = userSettings.modelConfig.highReasoning
@@ -494,8 +493,12 @@ const systemInstruction = generateSystemInstruction(userSettings, tone, postType
         });
 
     } catch (error) {
-        console.error("AWS Bedrock/Nova Error:", error);
-        res.status(500).json({ message: "Generation failed", error: error.message });
+        console.error("FULL AWS ERROR:", error); // This is vital
+        res.status(500).json({
+            message: "Generation failed",
+            error: error.message,
+            awsCode: error.name // Tells you if it's AccessDenied, Throttling, etc.
+        });
     }
 };
 // @desc    Save post to library
