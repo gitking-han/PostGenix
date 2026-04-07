@@ -496,7 +496,7 @@ The output must be clean, human, and ready to paste into LinkedIn.
         console.error("FULL AWS ERROR:", error); // This is vital
         res.status(500).json({
             message: "Generation failed",
-            error: error.name,
+            error: error.message,
             awsCode: error.name // Tells you if it's AccessDenied, Throttling, etc.
         });
     }
