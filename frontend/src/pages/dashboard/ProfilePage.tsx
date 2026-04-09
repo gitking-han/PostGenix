@@ -200,7 +200,10 @@ export default function ProfilePage() {
                                 <Button onClick={() => setIsEditing(true)}>Edit Profile</Button>
                                 <Button variant="outline" asChild>
                                     <Link to="/dashboard/settings">
-                                        <ExternalLink className="mr-2 h-4 w-4" /> Settings
+                                        <span className="flex items-center">
+                                            <ExternalLink className="mr-2 h-4 w-4" />
+                                            Settings
+                                        </span>
                                     </Link>
                                 </Button>
                             </div>
