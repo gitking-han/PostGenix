@@ -5,9 +5,9 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Linkedin, Twitter, Loader2, ExternalLink } from "lucide-react";
+import { Linkedin, Twitter, Loader2 } from "lucide-react";
 import { CompleteProfileForm } from "@/components/ui/CompleteProfileForm";
-import { Link } from "lucide-react";
+import { Link } from "react-router-dom";
 /* ---------- Types ---------- */
 
 interface Profile {
@@ -48,7 +48,6 @@ export default function ProfilePage() {
     const [isEditing, setIsEditing] = useState(false);
     const [refreshKey, setRefreshKey] = useState(0);
 
-    /* ---------- Fetch Profile ---------- */
 
     useEffect(() => {
         const fetchProfile = async () => {
@@ -198,13 +197,8 @@ export default function ProfilePage() {
 
                             <div className="flex gap-2">
                                 <Button onClick={() => setIsEditing(true)}>Edit Profile</Button>
-                                <Button variant="outline" asChild>
-                                    <Link to="/dashboard/settings">
-                                        <span className="flex items-center">
-                                            <ExternalLink className="mr-2 h-4 w-4" />
-                                            Settings
-                                        </span>
-                                    </Link>
+                                <Button variant="outline">
+                                    <Link to="/dashboard/settings">Settings</Link>
                                 </Button>
                             </div>
                         </div>
