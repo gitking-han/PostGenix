@@ -50,7 +50,7 @@ export default function ProfilePage() {
 
     /* ---------- Fetch Profile ---------- */
 
-    useEffect(() => { 
+    useEffect(() => {
         const fetchProfile = async () => {
             const token = localStorage.getItem("authToken");
             if (!token) {
@@ -198,7 +198,11 @@ export default function ProfilePage() {
 
                             <div className="flex gap-2">
                                 <Button onClick={() => setIsEditing(true)}>Edit Profile</Button>
-                                <Link to={"/dashboard/settings"}><Button variant="outline"><ExternalLink/>Settings</Button></Link>
+                                <Button variant="outline" asChild>
+                                    <Link to="/dashboard/settings">
+                                        <ExternalLink className="mr-2 h-4 w-4" /> Settings
+                                    </Link>
+                                </Button>
                             </div>
                         </div>
 
