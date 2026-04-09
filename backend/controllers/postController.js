@@ -446,8 +446,8 @@ The output must be clean, human, and ready to paste into LinkedIn.
         // --- 3. SELECT NOVA MODEL ---
         // Nova Lite is perfect for standard generation, Nova Pro for high reasoning
         const modelId = userSettings.modelConfig.highReasoning
-            ? "amazon.titan-text-lite-v1"
-            : "amazon.titan-text-lite-v1";
+            ? "amazon.nova-pro-v1:0"
+            : "amazon.nova-lite-v1:0";
 
         // --- 4. FORMAT CHAT HISTORY FOR BEDROCK ---
         // Bedrock uses 'assistant' instead of 'model'
