@@ -143,7 +143,7 @@ export default function PortfolioManagePage() {
             {/* 1. Added break-all to prevent long URLs from pushing the screen wide */}
             {/* 2. Added min-w-0 to allow flex-1 to actually shrink */}
             <div className="flex-1 bg-muted rounded-lg px-4 py-3 text-muted-foreground font-mono text-sm break-all min-w-0 border border-border">
-              postgenix.app/portfolio/{profile?.username || "loading..."}
+              https://post-genix.vercel.app/portfolio/{profile?.username || "loading..."}
             </div>
 
             {/* Button group container */}
@@ -158,9 +158,6 @@ export default function PortfolioManagePage() {
                 <span className="inline">Copy Link</span>
               </Button>
 
-              <Button variant="outline" className="shrink-0">
-                <Settings className="w-4 h-4" />
-              </Button>
             </div>
 
           </div>
