@@ -87,7 +87,7 @@ export default function PortfolioManagePage() {
   };
 
   const copyToClipboard = () => {
-    const url = `postgenix.app/portfolio/${profile?.username}`;
+    const url = `https://post-genix.vercel.app/portfolio/${profile?.username}`;
     navigator.clipboard.writeText(url);
     toast.success("Link copied to clipboard!");
   };

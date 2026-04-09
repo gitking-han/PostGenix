@@ -5,7 +5,7 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Linkedin, Twitter, Loader2 } from "lucide-react";
+import { Linkedin, Twitter, Loader2, ExternalLink } from "lucide-react";
 import { CompleteProfileForm } from "@/components/ui/CompleteProfileForm";
 import { Link } from "lucide-react";
 /* ---------- Types ---------- */
@@ -198,7 +198,7 @@ export default function ProfilePage() {
 
                             <div className="flex gap-2">
                                 <Button onClick={() => setIsEditing(true)}>Edit Profile</Button>
-                                <Link to={"/dashboard/settings"}><Button variant="outline">Settings</Button></Link>
+                                <Link to={"/dashboard/settings"}><Button variant="outline"><ExternalLink/>Settings</Button></Link>
                             </div>
                         </div>
 
