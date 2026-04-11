@@ -139,7 +139,7 @@ export default function CookiesPage() {
               <p className="text-muted-foreground">
                 If you have questions about our use of cookies, please contact us at:
               </p>
-              <p className="text-accent mt-2">privacy@PostGenix.com</p>
+              <p className="text-accent mt-2">contact.postgenix@gmail.com</p>
             </div>
           </div>
         </div>

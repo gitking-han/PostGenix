@@ -62,13 +62,13 @@ export default function AboutPage() {
               <p className="text-lg text-muted-foreground mb-8">
                 I believe your ideas deserve to be shared — and credited to you. That's why I built PostGenix as a solo project, combining AI writing assistance with content protection features.
               </p>
-              <div className="flex items-center gap-4">
+              {/* <div className="flex items-center gap-4">
                 <Zap className="w-12 h-12 text-accent" />
                 <div>
                   <p className="text-3xl font-bold text-foreground">50,000+</p>
                   <p className="text-muted-foreground">LinkedIn creators trust PostGenix</p>
                 </div>
-              </div>
+              </div> */}
             </div>
             <div className="glass rounded-2xl p-8">
               <blockquote className="text-xl text-foreground italic mb-4">

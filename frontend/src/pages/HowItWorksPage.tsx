@@ -11,7 +11,6 @@ const steps = [
     description: "Tell our AI what you want to share — a career insight, business lesson, personal story, or industry take. Be as brief or detailed as you like.",
     details: [
       "Share your expertise or experience",
-      "Describe a lesson learned",
       "Pitch a hot take on your industry",
       "Tell a story from your career",
     ],
@@ -23,7 +22,6 @@ const steps = [
     description: "Our LinkedIn-trained AI creates a post draft optimized for engagement. LinkedIn integration coming soon.",
     details: [
       "Scroll-stopping opening hooks",
-      "Story-driven engagement patterns",
       "Professional or casual tone options",
       "Optimal post length for LinkedIn",
     ],
@@ -35,7 +33,6 @@ const steps = [
     description: "Use our distraction-free editor to refine your draft. Customize content and formatting before sharing.",
     details: [
       "Rich text formatting",
-      "Real-time preview",
       "Add emojis and line breaks",
       "Hashtag suggestions",
     ],
@@ -46,8 +43,7 @@ const steps = [
     title: "Prepare for LinkedIn",
     description: "Copy, export, or schedule your post. Direct LinkedIn publishing is coming soon.",
     details: [
-      "Copy to LinkedIn or other platforms",
-      "Plan your posting schedule",
+      "Copy or post on LinkedIn instantly",
       "Save to portfolio",
       "Track post performance manually",
     ],
@@ -60,7 +56,6 @@ const steps = [
     details: [
       "Dynamic watermarks",
       "Copy protection",
-      "Timestamped proof",
       "Showcase your best work",
     ],
   },

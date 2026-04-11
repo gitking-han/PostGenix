@@ -122,7 +122,7 @@ export default function PrivacyPage() {
               <p className="text-muted-foreground">
                 If you have questions about this Privacy Policy, please contact us at:
               </p>
-              <p className="text-accent mt-2">privacy@PostGenix.com</p>
+              <p className="text-accent mt-2">contact.postgenix@gmail.com</p>
             </div>
           </div>
         </div>

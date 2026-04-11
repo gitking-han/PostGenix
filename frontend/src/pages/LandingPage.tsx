@@ -26,9 +26,9 @@ const features = [
   },
   {
     icon: Send,
-    title: "LinkedIn-Ready Publishing (Coming Soon)",
+    title: "LinkedIn-Ready Publishing",
     description:
-      "Create perfectly formatted posts you can copy or export instantly. Direct LinkedIn publishing and scheduling are coming soon.",
+      "Create perfectly formatted posts you can copy or export instantly. Direct LinkedIn scheduling is coming soon.",
   },
   {
     icon: Shield,
@@ -61,7 +61,7 @@ const steps = [
     number: "03",
     title: "Post or Save",
     description:
-      "Copy and post on LinkedIn instantly, or save it to your portfolio. Direct LinkedIn integration is coming soon.",
+      "Copy and post on LinkedIn instantly, or save it to your portfolio.",
   },
 ];
 
@@ -98,12 +98,12 @@ const faqs = [
   {
     question: "Can I connect my LinkedIn account?",
     answer:
-      "LinkedIn integration is coming soon. For now, you can easily copy or export your posts and publish them manually.",
+      "LinkedIn integration is now live. You can publish your posts directly to LinkedIn without needing to copy or export anything.",
   },
   {
     question: "What is a content portfolio?",
     answer:
-      "Your portfolio is a private collection of all the posts you create — helping you track ideas, reuse winning content, and stay consistent.",
+      "Your portfolio is a both private and public collection of all the posts you create — helping you track ideas, reuse winning content, and stay consistent.",
   },
   {
     question: "Is there a free plan?",
@@ -267,7 +267,7 @@ export default function LandingPage() {
                 </li>
                 <li className="flex gap-2">
                   <CheckCircle2 className="w-5 h-5 text-accent" />
-                  <span>Early access to LinkedIn integration</span>
+                  <span>Early access to Social Media integrations</span>
                 </li>
               </ul>
               <Link to="/signup">

@@ -31,7 +31,6 @@ const mainFeatures = [
     description: "Generate viral LinkedIn posts in seconds. Our AI is trained specifically on high-performing LinkedIn content.",
     highlights: [
       "Attention-grabbing hooks that stop the scroll",
-      "Story-driven posts that drive engagement",
       "Professional tone matching your voice",
       "Hashtag suggestions for maximum reach",
     ],
@@ -42,9 +41,8 @@ const mainFeatures = [
     description: "Connect your LinkedIn account and publish posts with a single click. Schedule for optimal engagement times.",
     highlights: [
       "Direct LinkedIn integration",
-      "Smart scheduling based on your audience",
-      "Queue management for consistent posting",
-      "Posting time optimization",
+      "Smart scheduling based on your audience comming soon",
+      "Queue management for consistent posting comming soon",
     ],
   },
   {
@@ -55,7 +53,6 @@ const mainFeatures = [
       "Dynamic watermarks",
       "Copy protection",
       "Screenshot deterrents",
-      "Ownership verification",
     ],
   },
   {
@@ -66,18 +63,13 @@ const mainFeatures = [
       "Custom portfolio URLs",
       "Editorial design",
       "Engagement analytics",
-      "SEO optimization",
     ],
   },
 ];
 
 const additionalFeatures = [
   { icon: Hash, title: "Smart Hashtags", description: "AI-suggested hashtags for maximum LinkedIn reach" },
-  { icon: Calendar, title: "Content Calendar", description: "Plan and schedule your LinkedIn content strategy" },
-  { icon: BarChart3, title: "Post Analytics", description: "Track impressions, reactions, and growth" },
-  { icon: TrendingUp, title: "Engagement Insights", description: "Learn what resonates with your audience" },
   { icon: MessageSquare, title: "Hook Generator", description: "Create scroll-stopping opening lines" },
-  { icon: Eye, title: "View Tracking", description: "See who's viewing your portfolio" },
   { icon: FileText, title: "Draft Management", description: "Organize and manage all your posts" },
   { icon: Settings, title: "Custom Settings", description: "Full control over your experience" },
 ];
@@ -161,7 +153,7 @@ export default function FeaturesPage() {
             </p>
           </div>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid sm:grid-cols-1 lg:grid-cols-2 gap-6">
             {additionalFeatures.map((feature, index) => (
               <div
                 key={index}

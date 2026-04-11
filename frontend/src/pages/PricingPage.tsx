@@ -14,9 +14,8 @@ const plans = [
       "5 AI-generated LinkedIn posts per day",
       "Basic portfolio",
       "Standard copy protection",
-      "LinkedIn integration (Coming Soon)",
+      "LinkedIn-ready Publishing",
       "Basic analytics",
-      "Community support",
     ],
     limitations: [
       "Limited storage",
@@ -29,19 +28,16 @@ const plans = [
     name: "Pro",
     description: "For serious LinkedIn creators",
     price: "2,000",
-    priceYearly: "1,800",
+    priceYearly: "0",
     popular: true,
     features: [
       "Unlimited AI-generated LinkedIn posts",
       "Premium portfolio with custom domain",
       "Advanced theft protection",
       "Post scheduling & analytics (Coming Soon)",
-      "Advanced engagement analytics",
       "Priority support",
-      "Content calendar",
-      "Team collaboration (up to 3)",
       "Remove PostGenix branding",
-      "API access",
+      "Early Access to Social Media Integrations",
     ],
     limitations: [],
     cta: "Upgrade to Pro",
@@ -60,17 +56,10 @@ const faqs = [
     answer: "We accept all major credit cards, debit cards, and digital wallets through our secure payment processor.",
   },
   {
-    question: "Is there a refund policy?",
-    answer: "Yes, we offer a 14-day money-back guarantee. If you're not satisfied with Pro, we'll refund your payment.",
-  },
-  {
     question: "Can I switch plans later?",
     answer: "Absolutely! You can upgrade from Free to Pro at any time. We'll prorate your subscription.",
   },
-  {
-    question: "Do you offer team or enterprise pricing?",
-    answer: "Yes! For teams larger than 3 members or enterprise needs, please contact us for custom pricing.",
-  },
+
 ];
 
 export default function PricingPage() {
@@ -103,9 +92,8 @@ export default function PricingPage() {
             {plans.map((plan, index) => (
               <div
                 key={index}
-                className={`editorial-card relative ${
-                  plan.popular ? "border-accent/50 bg-accent/5" : ""
-                } animate-fade-in-up`}
+                className={`editorial-card relative ${plan.popular ? "border-accent/50 bg-accent/5" : ""
+                  } animate-fade-in-up`}
                 style={{ animationDelay: `${index * 100}ms` }}
               >
                 {plan.popular && (
@@ -125,11 +113,11 @@ export default function PricingPage() {
                     <span className="text-5xl font-bold text-foreground">PKR {plan.price}</span>
                     <span className="text-muted-foreground">/month</span>
                   </div>
-                  {plan.priceYearly !== plan.price && (
+                  {/* {plan.priceYearly !== plan.price && (
                     <p className="text-sm text-accent mt-2">
                       PKR {plan.priceYearly}/month with yearly billing (save 10%)
                     </p>
-                  )}
+                  )} */}
                 </div>
 
                 <div className="space-y-4 mb-8">
@@ -182,39 +170,67 @@ export default function PricingPage() {
             </p>
           </div>
 
-          <div className="max-w-4xl mx-auto overflow-x-auto">
-            <table className="w-full">
+          {/* Full Centering Fix */}
+          <div className="max-w-5xl mx-auto flex justify-between">
+            <table className="w-full text-center">
               <thead>
                 <tr className="border-b border-border">
-                  <th className="text-left py-4 px-4 font-medium text-foreground">Feature</th>
-                  <th className="text-center py-4 px-4 font-medium text-foreground">Free</th>
-                  <th className="text-center py-4 px-4 font-medium text-accent">Pro</th>
+                  <th className="py-4 px-4 font-medium text-foreground text-center">
+                    Feature
+                  </th>
+                  <th className="py-4 px-4 font-medium text-foreground text-center">
+                    Free
+                  </th>
+                  <th className="py-4 px-4 font-medium text-accent text-center">
+                    Pro
+                  </th>
                 </tr>
               </thead>
+
               <tbody className="divide-y divide-border">
-                {[
-                  { feature: "AI LinkedIn posts", free: "5/day", pro: "Unlimited" },
-                  { feature: "Portfolio", free: "Basic", pro: "Premium + Custom Domain" },
-                  { feature: "Copy protection", free: "Standard", pro: "Advanced" },
-                  { feature: "LinkedIn publishing", free: "Coming Soon", pro: "Coming Soon + Scheduling" },
-                  { feature: "Analytics", free: "Basic", pro: "Advanced" },
-                  { feature: "Support", free: "Community", pro: "Priority" },
-                  { feature: "Remove branding", free: "No", pro: "Yes" },
-                  { feature: "Team members", free: "1", pro: "Up to 3" },
-                  { feature: "API access", free: "No", pro: "Yes" },
-                ].map((row, index) => (
-                  <tr key={index}>
-                    <td className="py-4 px-4 text-foreground">{row.feature}</td>
-                    <td className="py-4 px-4 text-center text-muted-foreground">{row.free}</td>
-                    <td className="py-4 px-4 text-center text-foreground font-medium">{row.pro}</td>
-                  </tr>
-                ))}
+
+                <tr>
+                  <td className="py-4 px-4 text-foreground text-center">AI LinkedIn posts</td>
+                  <td className="py-4 px-4 text-center text-muted-foreground">5/day</td>
+                  <td className="py-4 px-4 text-center text-foreground font-medium">Unlimited</td>
+                </tr>
+
+                <tr>
+                  <td className="py-4 px-4 text-foreground text-center">Portfolio</td>
+                  <td className="py-4 px-4 text-center text-muted-foreground">Basic</td>
+                  <td className="py-4 px-4 text-center text-foreground font-medium">Premium + Custom Domain</td>
+                </tr>
+
+                <tr>
+                  <td className="py-4 px-4 text-foreground text-center">Copy protection</td>
+                  <td className="py-4 px-4 text-center text-muted-foreground">Standard</td>
+                  <td className="py-4 px-4 text-center text-foreground font-medium">Advanced</td>
+                </tr>
+
+                <tr>
+                  <td className="py-4 px-4 text-foreground text-center">LinkedIn publishing</td>
+                  <td className="py-4 px-4 text-center text-muted-foreground">No Sheduling</td>
+                  <td className="py-4 px-4 text-center text-foreground font-medium">Sheduling Comming Soon</td>
+                </tr>
+
+                <tr>
+                  <td className="py-4 px-4 text-foreground text-center">Analytics</td>
+                  <td className="py-4 px-4 text-center text-muted-foreground">Basic</td>
+                  <td className="py-4 px-4 text-center text-foreground font-medium">Advanced</td>
+                </tr>
+
+                <tr>
+                  <td className="py-4 px-4 text-foreground text-center">Remove branding</td>
+                  <td className="py-4 px-4 text-center text-muted-foreground">No</td>
+                  <td className="py-4 px-4 text-center text-foreground font-medium">Yes</td>
+                </tr>
+
+
               </tbody>
             </table>
           </div>
         </div>
       </section>
-
       {/* FAQ Section */}
       <section className="py-20 lg:py-32">
         <div className="section-container">

@@ -13,17 +13,11 @@ const contactOptions = [
   {
     icon: Mail,
     title: "Email Me",
-    description: "Send me an email and I'll respond as soon as possible",
-    action: "hello@PostGenix.com",
+    description: "Send me an email and I'll respond",
+    action: "contact.postgenix@gmail.com",
     availability: "Usually within 24h"
   },
-  {
-    icon: HelpCircle,
-    title: "Knowledge Base",
-    description: "Browse helpful guides and tips",
-    action: "Visit Guides",
-    availability: "Self-service"
-  }
+  
 ];
 
 export default function ContactPage() {
@@ -51,7 +45,7 @@ export default function ContactPage() {
       {/* Contact Options */}
       <section className="pb-20">
         <div className="section-container">
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+          <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
             {contactOptions.map((option, index) => (
               <div key={index} className="glass rounded-xl p-8 text-center">
                 <div className="w-16 h-16 rounded-full bg-accent/10 flex items-center justify-center mx-auto mb-6">

@@ -134,7 +134,7 @@ export default function TermsPage() {
               <p className="text-muted-foreground">
                 For questions about these Terms, contact us at:
               </p>
-              <p className="text-accent mt-2">legal@PostGenix.com</p>
+              <p className="text-accent mt-2">contact.postgenix@gmail.com</p>
             </div>
           </div>
         </div>

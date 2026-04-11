@@ -55,9 +55,7 @@ const authorBenefits = [
   "Full access to your own LinkedIn posts without any restrictions",
   "Easy copying for repurposing your content",
   "Complete control over what's public and private",
-  "Analytics on who's viewing your portfolio",
   "Instant removal of any content",
-  "Export all your posts anytime",
 ];
 
 export default function SecurityPage() {
