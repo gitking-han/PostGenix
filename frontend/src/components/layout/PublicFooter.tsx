@@ -20,10 +20,10 @@ const footerLinks = {
     { name: "Cookie Policy", href: "/cookies" },
   ],
   social: [
-    { name: "Twitter", href: "#", icon: Twitter },
-    { name: "LinkedIn", href: "#", icon: Linkedin },
-    { name: "GitHub", href: "#", icon: Github },
-    { name: "Email", href: "#", icon: Mail },
+    // { name: "Twitter", href: "#", icon: Twitter },
+    { name: "LinkedIn", href: "https://www.linkedin.com/company/postgenix/", icon: Linkedin },
+    // { name: "GitHub", href: "#", icon: Github },
+    { name: "Email", href: "https://mail.google.com/mail/?view=cm&to=contact.postgenix@gmail.com", icon: Mail },
   ],
 };
 
@@ -50,6 +50,8 @@ export function PublicFooter() {
                 <a
                   key={item.name}
                   href={item.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-all duration-200"
                   aria-label={item.name}
                 >

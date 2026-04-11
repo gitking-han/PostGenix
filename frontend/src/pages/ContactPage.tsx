@@ -16,8 +16,8 @@ const contactOptions = [
     icon: MessageSquare,
     title: "Live Chat",
     description: "Chat with me directly in real-time",
-    action: "Start Chat",
-    availability: "Available 24/7",
+    action: "Coming Soon",
+    availability: "Available Soon",
   },
   {
     icon: Mail,
