@@ -1,6 +1,15 @@
 import { PublicLayout } from "@/components/layout/PublicLayout";
 import { Button } from "@/components/ui/button";
-import { Linkedin, Mail, MessageSquare, HelpCircle, Clock } from "lucide-react";
+import { Linkedin, Mail, MessageSquare, Clock } from "lucide-react";
+import { useState, ChangeEvent, FormEvent } from "react";
+import { useToast } from "@/hooks/use-toast";
+
+type FormDataType = {
+  firstName: string;
+  lastName: string;
+  email: string;
+  message: string;
+};
 
 const contactOptions = [
   {
@@ -8,19 +17,98 @@ const contactOptions = [
     title: "Live Chat",
     description: "Chat with me directly in real-time",
     action: "Start Chat",
-    availability: "Available 24/7"
+    availability: "Available 24/7",
   },
   {
     icon: Mail,
     title: "Email Me",
     description: "Send me an email and I'll respond",
     action: "contact.postgenix@gmail.com",
-    availability: "Usually within 24h"
+    availability: "Usually within 24h",
   },
-  
 ];
 
 export default function ContactPage() {
+  const { toast } = useToast();
+
+  const [formData, setFormData] = useState<FormDataType>({
+    firstName: "",
+    lastName: "",
+    email: "",
+    message: "",
+  });
+
+  const [loading, setLoading] = useState(false);
+
+  // ✅ Handle input change
+  const handleChange = (
+    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    setFormData((prev) => ({
+      ...prev,
+      [e.target.name]: e.target.value,
+    }));
+  };
+
+  // ✅ Handle submit
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/contact`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to send message");
+      }
+
+      toast({
+        title: "Message Sent",
+        description: data.message || "We'll get back to you soon!",
+      });
+
+      // ✅ Reset form
+      setFormData({
+        firstName: "",
+        lastName: "",
+        email: "",
+        message: "",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Something went wrong",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ✅ Handle email click
+  const handleEmailClick = () => {
+    const gmailURL =
+      "https://mail.google.com/mail/?view=cm&to=contact.postgenix@gmail.com";
+
+    const newTab = window.open(gmailURL, "_blank");
+
+    if (!newTab) {
+      navigator.clipboard.writeText("contact.postgenix@gmail.com");
+      toast({
+        title: "Copied",
+        description: "Email copied to clipboard",
+      });
+    }
+  };
+
   return (
     <PublicLayout>
       {/* Hero Section */}
@@ -32,8 +120,7 @@ export default function ContactPage() {
               <span className="text-sm font-medium">Get in Touch</span>
             </div>
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground mb-6">
-              I'd Love to
-              <span className="text-gradient"> Hear From You</span>
+              I'd Love to <span className="text-gradient">Hear From You</span>
             </h1>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
               Whether it’s a question, feedback, or a project idea, feel free to reach out.
@@ -51,13 +138,31 @@ export default function ContactPage() {
                 <div className="w-16 h-16 rounded-full bg-accent/10 flex items-center justify-center mx-auto mb-6">
                   <option.icon className="w-8 h-8 text-accent" />
                 </div>
-                <h3 className="text-xl font-semibold text-foreground mb-2">{option.title}</h3>
-                <p className="text-muted-foreground text-sm mb-4">{option.description}</p>
+
+                <h3 className="text-xl font-semibold text-foreground mb-2">
+                  {option.title}
+                </h3>
+
+                <p className="text-muted-foreground text-sm mb-4">
+                  {option.description}
+                </p>
+
                 <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground mb-4">
                   <Clock className="w-3 h-3" />
                   {option.availability}
                 </div>
-                <Button variant={index === 0 ? "accent" : "outline"} className="w-full">
+
+                <Button
+                  variant={index === 0 ? "accent" : "outline"}
+                  className="w-full"
+                  onClick={() => {
+                    if (option.title === "Email Me") {
+                      handleEmailClick();
+                    } else {
+                      console.log("Start chat...");
+                    }
+                  }}
+                >
                   {option.action}
                 </Button>
               </div>
@@ -78,51 +183,55 @@ export default function ContactPage() {
                 Fill out the form below and I'll get back to you as soon as I can.
               </p>
             </div>
-            <form className="glass rounded-2xl p-8 lg:p-12 space-y-6">
+
+            <form
+              className="glass rounded-2xl p-8 lg:p-12 space-y-6"
+              onSubmit={handleSubmit}
+            >
               <div className="grid md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    First Name
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="John"
-                    className="w-full px-4 py-3 rounded-lg bg-background border border-border focus:border-accent focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    Last Name
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Doe"
-                    className="w-full px-4 py-3 rounded-lg bg-background border border-border focus:border-accent focus:outline-none"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  Email Address
-                </label>
                 <input
-                  type="email"
-                  placeholder="john@example.com"
-                  className="w-full px-4 py-3 rounded-lg bg-background border border-border focus:border-accent focus:outline-none"
+                  name="firstName"
+                  value={formData.firstName}
+                  onChange={handleChange}
+                  placeholder="First Name"
+                  className="w-full px-4 py-3 rounded-lg bg-background border border-border focus:border-accent outline-none"
+                />
+
+                <input
+                  name="lastName"
+                  value={formData.lastName}
+                  onChange={handleChange}
+                  placeholder="Last Name"
+                  className="w-full px-4 py-3 rounded-lg bg-background border border-border focus:border-accent outline-none"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  Message
-                </label>
-                <textarea
-                  rows={6}
-                  placeholder="Tell me how I can help..."
-                  className="w-full px-4 py-3 rounded-lg bg-background border border-border focus:border-accent focus:outline-none resize-none"
-                />
-              </div>
-              <Button variant="accent" size="lg" className="w-full">
-                Send Message
+
+              <input
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                type="email"
+                placeholder="Email Address"
+                className="w-full px-4 py-3 rounded-lg bg-background border border-border focus:border-accent outline-none"
+              />
+
+              <textarea
+                name="message"
+                value={formData.message}
+                onChange={handleChange}
+                rows={6}
+                placeholder="Tell me how I can help..."
+                className="w-full px-4 py-3 rounded-lg bg-background border border-border focus:border-accent outline-none resize-none"
+              />
+
+              <Button
+                type="submit"
+                variant="accent"
+                size="lg"
+                className="w-full"
+                disabled={loading}
+              >
+                {loading ? "Sending..." : "Send Message"}
               </Button>
             </form>
           </div>

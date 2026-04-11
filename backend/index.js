@@ -46,6 +46,7 @@ app.use('/api/settings', require('./routes/settings'));
 app.use('/api/posts', postRoutes); 
 app.use('/api/chats', chatRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/contact', require('./routes/mail'))
 
 
 app.listen(port, () => {
