@@ -1,6 +1,5 @@
-// routes/contact.js
-import express from "express";
-import nodemailer from "nodemailer";
+const express = require("express");
+const nodemailer = require("nodemailer");
 
 const router = express.Router();
 
@@ -12,11 +11,11 @@ router.post("/", async (req, res) => {
       service: "gmail",
       auth: {
         user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS, // App password (NOT your real password)
+        pass: process.env.EMAIL_PASS, // Gmail App Password
       },
     });
 
-    const mailOptions = {
+    await transporter.sendMail({
       from: email,
       to: "contact.postgenix@gmail.com",
       subject: `New Contact Message from ${firstName} ${lastName}`,
@@ -26,14 +25,13 @@ router.post("/", async (req, res) => {
         <p><strong>Email:</strong> ${email}</p>
         <p><strong>Message:</strong> ${message}</p>
       `,
-    };
-
-    await transporter.sendMail(mailOptions);
+    });
 
     res.status(200).json({ message: "Message sent successfully" });
   } catch (error) {
+    console.error(error);
     res.status(500).json({ error: "Failed to send message" });
   }
 });
 
-export default router;
+module.exports = router;
