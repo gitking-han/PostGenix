@@ -84,7 +84,7 @@ export default function LoginPage() {
                 Post<span className="text-accent">Genix</span>
               </span>
             </Link>
-            <div className="mb-6 p-4 rounded-lg bg-amber-500/10 border border-amber-500/30 text-sm">
+            {/* <div className="mb-6 p-4 rounded-lg bg-amber-500/10 border border-amber-500/30 text-sm">
               <div className="flex gap-3">
                 <AlertCircle className="w-5 h-5 text-amber-500 shrink-0" />
                 <div>
@@ -101,7 +101,7 @@ export default function LoginPage() {
                   </div>
                 </div>
               </div>
-            </div>
+            </div> */}
 
             <h1 className="text-3xl font-bold text-foreground mb-2">Welcome back</h1>
             <p className="text-muted-foreground mb-8">
