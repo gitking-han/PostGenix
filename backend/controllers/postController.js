@@ -1,28 +1,22 @@
 const Post = require("../models/Post");
 const Settings = require("../models/Settings");
-const { GoogleGenerativeAI } = require("@google/generative-ai");
 const { checkAndResetCredits } = require('../utils/creditManager');
 const User = require('../models/User');
-const { BedrockRuntimeClient, ConverseCommand } = require("@aws-sdk/client-bedrock-runtime");
+const Anthropic = require("@anthropic-ai/sdk");  // ✅ CHANGED: Replaced AWS SDK with Anthropic SDK
 
 
-// Initialize Google AI
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY);
-
-// @desc    Generate AI content using User Settings
-const bedrockClient = new BedrockRuntimeClient({
-    region: "us-east-1",
-    credentials: {
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-    },
+// ✅ CHANGED: Replaced BedrockRuntimeClient with Anthropic client
+const anthropicClient = new Anthropic({
+    apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
+
+// @desc    Generate AI content using User Settings
 exports.generatePost = async (req, res) => {
     try {
         const { prompt, postType, tone, history } = req.body;
 
-        // --- CREDIT & USER LOGIC (Keep as is) ---
+        // --- CREDIT & USER LOGIC (unchanged) ---
         let user = await User.findById(req.user.id);
         if (!user) return res.status(404).json({ message: "User not found" });
         user = await checkAndResetCredits(user);
@@ -34,7 +28,7 @@ exports.generatePost = async (req, res) => {
             });
         }
 
-        // --- SETTINGS LOGIC (Keep as is) ---
+        // --- SETTINGS LOGIC (unchanged) ---
         let userSettings = await Settings.findOne({ user: req.user.id });
         if (!userSettings) {
             userSettings = {
@@ -43,6 +37,7 @@ exports.generatePost = async (req, res) => {
             };
         }
 
+        // ✅ IMPROVED: generateSystemInstruction — added new sections & tightened existing ones
         const generateSystemInstruction = (userSettings = {}, tone = "Professional", postType = "Short") => {
 
             // --- POST TYPE BLUEPRINTS ---
@@ -161,6 +156,11 @@ Write like someone who has genuinely been through something hard and come out sh
             const mission = userSettings?.brandKit?.mission || "Building authority and sharing expertise";
             const audience = userSettings?.brandKit?.targetAudience || "Professionals and practitioners";
             const terminology = userSettings?.brandKit?.terminology || "Industry-standard language";
+
+            // ✅ IMPROVED: Added NEGATIVE PROMPT section so userSettings.modelConfig.negativePrompt is actually used
+            const negativePrompt = userSettings?.modelConfig?.negativePrompt
+                ? `\n---\n\n## ADDITIONAL AVOID RULES (User Defined)\n\nThe user has flagged the following. Never include these in any output:\n${userSettings.modelConfig.negativePrompt}`
+                : "";
 
             return `
 ## WHO YOU ARE
@@ -438,47 +438,46 @@ No markdown.
 No meta commentary.
 
 The output must be clean, human, and ready to paste into LinkedIn.
+${negativePrompt}
 `.trim();
         };
 
         // --- USAGE ---
         const systemInstruction = generateSystemInstruction(userSettings, tone, postType);
-        // --- 3. SELECT NOVA MODEL ---
-        // Nova Lite is perfect for standard generation, Nova Pro for high reasoning
-        const modelId = userSettings.modelConfig.highReasoning
-            ? "amazon.nova-pro-v1:0"
-            : "amazon.nova-lite-v1:0";
 
-        // --- 4. FORMAT CHAT HISTORY FOR BEDROCK ---
-        // Bedrock uses 'assistant' instead of 'model'
+        // ✅ CHANGED: Replaced Nova model selection with Claude models
+        // Haiku 4.5 for standard generation (fast + cheap), Sonnet 4.6 for high reasoning
+        const modelId = userSettings.modelConfig.highReasoning
+            ? "claude-sonnet-4-6"
+            : "claude-haiku-4-5-20251001";
+
+        // ✅ CHANGED: Format history for Anthropic SDK
+        // Anthropic uses plain string content, not [{text: ...}] array like Bedrock
         const formattedHistory = (history || []).map(msg => ({
             role: msg.role === "user" ? "user" : "assistant",
-            content: [{ text: msg.content || "" }],
+            content: msg.content || "",
         }));
 
         // Add the current user prompt to history
         formattedHistory.push({
             role: "user",
-            content: [{ text: prompt }]
+            content: prompt
         });
 
-        // --- 5. CALL AMAZON NOVA ---
-        const command = new ConverseCommand({
-            modelId: modelId,
+        // ✅ CHANGED: Replaced ConverseCommand + bedrockClient.send() with Anthropic messages.create()
+        const response = await anthropicClient.messages.create({
+            model: modelId,
+            max_tokens: 1000,
+            system: systemInstruction,
             messages: formattedHistory,
-            system: [{ text: systemInstruction }],
-            inferenceConfig: {
-                temperature: userSettings.modelConfig.temperature || 0.7,
-                maxTokens: 1000
-            }
+            temperature: userSettings.modelConfig.temperature || 0.7,
         });
 
-        const response = await bedrockClient.send(command);
+        // ✅ CHANGED: Extract text from Anthropic response format
+        // Anthropic: response.content[0].text  (vs Nova: response.output.message.content[0].text)
+        const generatedText = response.content[0].text;
 
-        // Extract text from Nova response
-        const generatedText = response.output.message.content[0].text;
-
-        // --- POST-GENERATION LOGIC (Keep as is) ---
+        // --- POST-GENERATION LOGIC (unchanged) ---
         if (user.plan === 'free') {
             user.credits -= 1;
             await user.save();
@@ -493,15 +492,17 @@ The output must be clean, human, and ready to paste into LinkedIn.
         });
 
     } catch (error) {
-        console.error("FULL AWS ERROR:", error); // This is vital
+        console.error("FULL ANTHROPIC ERROR:", error);
         res.status(500).json({
             message: "Generation failed",
             error: error.message,
-            awsCode: error.name // Tells you if it's AccessDenied, Throttling, etc.
+            errorType: error.constructor.name  // e.g. AuthenticationError, RateLimitError
         });
     }
 };
-// @desc    Save post to library
+
+
+// @desc    Save post to library (unchanged)
 exports.savePost = async (req, res) => {
     try {
         const { prompt, content, postType, tone } = req.body;
@@ -519,7 +520,7 @@ exports.savePost = async (req, res) => {
     }
 };
 
-// @desc    Get all user posts
+// @desc    Get all user posts (unchanged)
 exports.getPosts = async (req, res) => {
     try {
         const posts = await Post.find({ user: req.user.id }).sort({ createdAt: -1 });
@@ -529,7 +530,7 @@ exports.getPosts = async (req, res) => {
     }
 };
 
-// @desc    Get single post
+// @desc    Get single post (unchanged)
 exports.getPostById = async (req, res) => {
     try {
         const post = await Post.findOne({ _id: req.params.id, user: req.user.id });
@@ -540,7 +541,7 @@ exports.getPostById = async (req, res) => {
     }
 };
 
-// @desc    Delete post
+// @desc    Delete post (unchanged)
 exports.deletePost = async (req, res) => {
     try {
         const post = await Post.findOneAndDelete({ _id: req.params.id, user: req.user.id });
@@ -551,7 +552,7 @@ exports.deletePost = async (req, res) => {
     }
 };
 
-// @desc    Update Visibility
+// @desc    Update Visibility (unchanged)
 exports.updateVisibility = async (req, res) => {
     try {
         const { isPublic } = req.body;
@@ -566,7 +567,7 @@ exports.updateVisibility = async (req, res) => {
     }
 };
 
-// @desc    Update Featured status
+// @desc    Update Featured status (unchanged)
 exports.updateFeatured = async (req, res) => {
     try {
         const { isFeatured } = req.body;
@@ -583,28 +584,18 @@ exports.updateFeatured = async (req, res) => {
     }
 };
 
-// @desc    Update a post
+// @desc    Update a post (unchanged)
 exports.updatePost = async (req, res) => {
     try {
         const { content, postType, tone } = req.body;
-
-        // Find the post and ensure it belongs to the logged-in user
         const post = await Post.findOneAndUpdate(
             { _id: req.params.id, user: req.user.id },
-            {
-                $set: {
-                    content,
-                    postType,
-                    tone
-                }
-            },
-            { new: true } // This returns the updated document
+            { $set: { content, postType, tone } },
+            { new: true }
         );
-
         if (!post) {
             return res.status(404).json({ message: "Post not found or unauthorized" });
         }
-
         res.status(200).json(post);
     } catch (error) {
         console.error("Update Error:", error);
