@@ -120,7 +120,7 @@ export default function WritePage() {
         ));
 
         toast({
-          title: "Nova Agent Succeeded! 🚀",
+          title: "Postgenix Agent Succeeded! 🚀",
           description: "Your post has been successfully dispatched to LinkedIn.",
         });
       } else {

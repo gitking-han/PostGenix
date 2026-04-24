@@ -324,7 +324,7 @@ export default function SettingsPage() {
               <h2 className="text-xl font-semibold flex items-center gap-2"><Zap className="w-5 h-5 text-amber-500" /> Parameters</h2>
 
               <div className="flex items-center justify-between p-4 border rounded-xl bg-primary/5">
-                <Label>High-Reasoning Mode (Nova Pro)</Label>
+                <Label>High-Reasoning Mode (Claude Sonnet 4.6)</Label>
                 <Switch
                   checked={settings.modelConfig.highReasoning}
                   onCheckedChange={(val) => setSettings({ ...settings, modelConfig: { ...settings.modelConfig, highReasoning: val } })}
@@ -385,7 +385,7 @@ export default function SettingsPage() {
                         LinkedIn Profile
                         {settings.linkedin?.isConnected && <CheckCircle2 className="w-3 h-3 text-green-500" />}
                       </h3>
-                      <p className="text-[11px] text-muted-foreground line-clamp-1">Enables Nova Agentic Auto-Drafting</p>
+                      <p className="text-[11px] text-muted-foreground line-clamp-1">Enables PostGenix Agentic Auto-Drafting</p>
                     </div>
                   </div>
 
@@ -411,7 +411,7 @@ export default function SettingsPage() {
                             <AlertDialogHeader>
                               <AlertDialogTitle>Revoke AI Access?</AlertDialogTitle>
                               <AlertDialogDescription>
-                                This will disconnect your LinkedIn account. Nova will no longer be able to draft or publish posts on your behalf.
+                                This will disconnect your LinkedIn account. PostGenix AI will no longer be able to draft or publish posts on your behalf.
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
@@ -445,7 +445,7 @@ export default function SettingsPage() {
                     </div>
                     <div>
                       <h3 className="font-bold text-sm">Twitter/X Agent</h3>
-                      <p className="text-[11px] text-muted-foreground italic">Coming to Nova v2.1</p>
+                      <p className="text-[11px] text-muted-foreground italic">Coming to PostGenix v2</p>
                     </div>
                   </div>
                   <span className="text-[9px] font-bold uppercase border px-2 py-1 rounded-md tracking-widest">Labs Only</span>
