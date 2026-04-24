@@ -1,42 +1,38 @@
 const User = require('../models/User');
 const Settings = require('../models/Settings');
-const axios = require('axios'); // Added for LinkedIn API calls
+const axios = require('axios');
+const Anthropic = require("@anthropic-ai/sdk"); // ✅ CHANGED: Replaced AWS SDK with Anthropic SDK
 
-const { BedrockRuntimeClient, ConverseCommand } = require("@aws-sdk/client-bedrock-runtime");
-
-// 2. Initialize the client
-const bedrockClient = new BedrockRuntimeClient({
-    region: "us-east-1",
-    credentials: {
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-    },
+// ✅ CHANGED: Replaced BedrockRuntimeClient with Anthropic client
+const anthropicClient = new Anthropic({
+    apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
 /* ==========================================================
    FEATURE 2: LINKEDIN AGENTIC TOOL DEFINITION
+   ✅ CHANGED: Anthropic tool format is different from Bedrock
+   Bedrock used: { toolSpec: { name, description, inputSchema: { json: {...} } } }
+   Anthropic uses: { name, description, input_schema: {...} }  (flat, no wrapper)
    ========================================================== */
 const linkedinTool = {
-    toolSpec: {
-        name: "create_linkedin_post",
-        description: "Formats and sends a post to the user's LinkedIn profile. Use this when the user wants to draft or publish a post.",
-        inputSchema: {
-            json: {
-                type: "object",
-                properties: {
-                    commentary: {
-                        type: "string",
-                        description: "The main text of the post. Should include the body and any relevant hashtags."
-                    }
-                },
-                required: ["commentary"]
+    name: "create_linkedin_post",
+    description: "Formats and sends a post to the user's LinkedIn profile. Use this when the user wants to draft or publish a post.",
+    input_schema: {                          // ✅ CHANGED: was inputSchema.json, now input_schema
+        type: "object",
+        properties: {
+            commentary: {
+                type: "string",
+                description: "The main text of the post. Should include the body and any relevant hashtags."
             }
-        }
+        },
+        required: ["commentary"]
     }
 };
 
 /* ==========================================================
-   FEATURE 1: ANALYZE PROFILE (Existing)
+   FEATURE 1: ANALYZE PROFILE
+   ✅ CHANGED: nova-lite → claude-haiku-4-5-20251001
+   Haiku 4.5 supports vision (images) natively — fast and cheap
    ========================================================== */
 exports.analyzeProfile = async (req, res) => {
     try {
@@ -64,32 +60,43 @@ exports.analyzeProfile = async (req, res) => {
     DATA:{"audience": "Target Audience Name", "tone": "Tone Name"}
 `;
 
-        const imageBytes = new Uint8Array(req.file.buffer);
+        // ✅ CHANGED: Anthropic requires raw base64 string (not Uint8Array like Bedrock)
+        const base64Image = req.file.buffer.toString('base64');
 
-        const command = new ConverseCommand({
-            modelId: "amazon.nova-lite-v1:0",
+        // ✅ CHANGED: Detect media type properly (supports jpeg, png, gif, webp)
+        const mediaType = req.file.mimetype; // e.g. "image/png" or "image/jpeg"
+
+        // ✅ CHANGED: Anthropic image format — image block comes BEFORE text (best practice per docs)
+        const response = await anthropicClient.messages.create({
+            model: "claude-haiku-4-5-20251001",  // ✅ CHANGED: was amazon.nova-lite-v1:0
+            max_tokens: 1500,
+            temperature: 0.5,
             messages: [
                 {
                     role: "user",
                     content: [
-                        { text: analysisPrompt },
                         {
-                            image: {
-                                format: req.file.mimetype === 'image/png' ? 'png' : 'jpeg',
-                                source: { bytes: imageBytes }
+                            // ✅ CHANGED: Anthropic image block format
+                            type: "image",
+                            source: {
+                                type: "base64",
+                                media_type: mediaType,  // "image/jpeg" or "image/png" etc.
+                                data: base64Image,      // raw base64 string, no data URL prefix
                             }
+                        },
+                        {
+                            type: "text",
+                            text: analysisPrompt
                         }
                     ]
                 }
-            ],
-            inferenceConfig: {
-                maxTokens: 1500,
-                temperature: 0.5
-            }
+            ]
         });
 
-        const response = await bedrockClient.send(command);
-        const analysisResults = response.output.message.content[0].text;
+        // ✅ CHANGED: Anthropic response format
+        // was: response.output.message.content[0].text
+        // now: response.content[0].text
+        const analysisResults = response.content[0].text;
 
         const jsonMatch = analysisResults.match(/DATA:({.*})/);
         let extractedAudience = "General";
@@ -103,7 +110,7 @@ exports.analyzeProfile = async (req, res) => {
                 extractedTone = parsedData.tone;
                 cleanText = analysisResults.replace(/DATA:({.*})/, "").trim();
             } catch (e) {
-                console.error("Failed to parse Nova JSON data", e);
+                console.error("Failed to parse Claude JSON data", e);
             }
         }
 
@@ -136,26 +143,23 @@ exports.analyzeProfile = async (req, res) => {
             remainingCredits: user.credits
         });
 
-        // // Inside analyzeProfile (after successful analysisResults)
-        // await User.findByIdAndUpdate(req.user.id, {
-        //     $set: { 'onboarding.hasAnalyzedProfile': true }
-        // });
-
     } catch (error) {
-        console.error("Multimodal Analysis Error:", error);
+        console.error("Profile Analysis Error:", error);
         res.status(500).json({ message: "Analysis failed", error: error.message });
     }
 };
 
 /* ==========================================================
    FEATURE 2: AUTO-DRAFT TO LINKEDIN (Agentic Action)
+   ✅ CHANGED: nova-pro → claude-sonnet-4-6
+   Sonnet 4.6 is the recommended model for agentic tool calling
    ========================================================== */
 exports.autoDraftToLinkedIn = async (req, res) => {
     try {
         const { postContent } = req.body;
         const user = await User.findById(req.user.id);
 
-        // 1. Check if user is connected
+        // 1. Check if user is connected (unchanged)
         if (!user.linkedin || !user.linkedin.isConnected) {
             return res.status(400).json({
                 message: "LinkedIn not connected.",
@@ -163,31 +167,32 @@ exports.autoDraftToLinkedIn = async (req, res) => {
             });
         }
 
-        // 2. Nova "Reasons" about the post and decides to use the tool
-        // We use Nova Pro for better reasoning in tool-calling
-        const command = new ConverseCommand({
-            modelId: "amazon.nova-pro-v1:0",
+        // ✅ CHANGED: Replaced ConverseCommand with anthropicClient.messages.create()
+        // Sonnet 4.6 replaces Nova Pro for agentic/tool-calling tasks
+        const response = await anthropicClient.messages.create({
+            model: "claude-sonnet-4-6",          // ✅ CHANGED: was amazon.nova-pro-v1:0
+            max_tokens: 1000,
+            tools: [linkedinTool],               // ✅ CHANGED: Anthropic tools array format
             messages: [{
                 role: "user",
-                content: [{ text: `I want to post this content to my LinkedIn. Please format it properly and use the tool to draft it: ${postContent}` }]
-            }],
-            toolConfig: {
-                tools: [linkedinTool]
-            }
+                content: `I want to post this content to my LinkedIn. Please format it properly and use the tool to draft it: ${postContent}`
+            }]
         });
 
-        const response = await bedrockClient.send(command);
-
-        // 3. Check if Nova requested to use the tool
-        const stopReason = response.stopReason;
+        // ✅ CHANGED: Anthropic stop reason for tool use is "tool_use" (same name, different structure)
+        // Bedrock: response.stopReason === "tool_use", content.find(c => c.toolUse)
+        // Anthropic: response.stop_reason === "tool_use", content.find(c => c.type === "tool_use")
+        const stopReason = response.stop_reason;
 
         if (stopReason === "tool_use") {
-            const toolCall = response.output.message.content.find(c => c.toolUse);
-            const { commentary } = toolCall.toolUse.input;
+            // ✅ CHANGED: Anthropic tool call block uses type === "tool_use" and block.input
+            // Bedrock used: c.toolUse and toolCall.toolUse.input
+            const toolCall = response.content.find(c => c.type === "tool_use");
+            const { commentary } = toolCall.input;  // ✅ CHANGED: was toolCall.toolUse.input
 
-            // 4. THE ACTION: Execute the actual LinkedIn API call
+            // 4. THE ACTION: Execute the actual LinkedIn API call (unchanged)
             const linkedinRes = await axios.post('https://api.linkedin.com/v2/posts', {
-                author: user.linkedin.personUrn, // stored during OAuth
+                author: user.linkedin.personUrn,
                 commentary: commentary,
                 visibility: "PUBLIC",
                 distribution: {
@@ -207,18 +212,15 @@ exports.autoDraftToLinkedIn = async (req, res) => {
 
             console.log("LOG: Captured LinkedIn ID:", linkedinId);
 
-            // 2. Build the URL (LinkedIn URLs work best with the URN)
             let linkedinUrl = "";
             if (linkedinId) {
-                // If it's a full URN (urn:li:share:123), it works in the feed/update path
                 linkedinUrl = `https://www.linkedin.com/feed/update/${linkedinId}/`;
             }
 
             return res.status(200).json({
                 message: "Post successfully dispatched!",
-                linkedinUrl: linkedinUrl // This will now have the real ID
+                linkedinUrl: linkedinUrl
             });
-
 
         } else {
             return res.status(500).json({ message: "Agent decided not to use the tool. Try again." });
