@@ -1,23 +1,20 @@
 const User = require('../models/User');
+const Post = require('../models/Post');
 const Settings = require('../models/Settings');
 const axios = require('axios');
-const Anthropic = require("@anthropic-ai/sdk"); // ✅ CHANGED: Replaced AWS SDK with Anthropic SDK
+const Anthropic = require("@anthropic-ai/sdk");
 
-// ✅ CHANGED: Replaced BedrockRuntimeClient with Anthropic client
 const anthropicClient = new Anthropic({
     apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
 /* ==========================================================
-   FEATURE 2: LINKEDIN AGENTIC TOOL DEFINITION
-   ✅ CHANGED: Anthropic tool format is different from Bedrock
-   Bedrock used: { toolSpec: { name, description, inputSchema: { json: {...} } } }
-   Anthropic uses: { name, description, input_schema: {...} }  (flat, no wrapper)
+   LINKEDIN TOOL DEFINITION
    ========================================================== */
 const linkedinTool = {
     name: "create_linkedin_post",
     description: "Formats and sends a post to the user's LinkedIn profile. Use this when the user wants to draft or publish a post.",
-    input_schema: {                          // ✅ CHANGED: was inputSchema.json, now input_schema
+    input_schema: {
         type: "object",
         properties: {
             commentary: {
@@ -30,9 +27,7 @@ const linkedinTool = {
 };
 
 /* ==========================================================
-   FEATURE 1: ANALYZE PROFILE
-   ✅ CHANGED: nova-lite → claude-haiku-4-5-20251001
-   Haiku 4.5 supports vision (images) natively — fast and cheap
+   FEATURE 1: ANALYZE PROFILE (unchanged)
    ========================================================== */
 exports.analyzeProfile = async (req, res) => {
     try {
@@ -60,15 +55,11 @@ exports.analyzeProfile = async (req, res) => {
     DATA:{"audience": "Target Audience Name", "tone": "Tone Name"}
 `;
 
-        // ✅ CHANGED: Anthropic requires raw base64 string (not Uint8Array like Bedrock)
         const base64Image = req.file.buffer.toString('base64');
+        const mediaType = req.file.mimetype;
 
-        // ✅ CHANGED: Detect media type properly (supports jpeg, png, gif, webp)
-        const mediaType = req.file.mimetype; // e.g. "image/png" or "image/jpeg"
-
-        // ✅ CHANGED: Anthropic image format — image block comes BEFORE text (best practice per docs)
         const response = await anthropicClient.messages.create({
-            model: "claude-haiku-4-5-20251001",  // ✅ CHANGED: was amazon.nova-lite-v1:0
+            model: "claude-haiku-4-5-20251001",
             max_tokens: 1500,
             temperature: 0.5,
             messages: [
@@ -76,12 +67,11 @@ exports.analyzeProfile = async (req, res) => {
                     role: "user",
                     content: [
                         {
-                            // ✅ CHANGED: Anthropic image block format
                             type: "image",
                             source: {
                                 type: "base64",
-                                media_type: mediaType,  // "image/jpeg" or "image/png" etc.
-                                data: base64Image,      // raw base64 string, no data URL prefix
+                                media_type: mediaType,
+                                data: base64Image,
                             }
                         },
                         {
@@ -93,9 +83,6 @@ exports.analyzeProfile = async (req, res) => {
             ]
         });
 
-        // ✅ CHANGED: Anthropic response format
-        // was: response.output.message.content[0].text
-        // now: response.content[0].text
         const analysisResults = response.content[0].text;
 
         const jsonMatch = analysisResults.match(/DATA:({.*})/);
@@ -150,16 +137,19 @@ exports.analyzeProfile = async (req, res) => {
 };
 
 /* ==========================================================
-   FEATURE 2: AUTO-DRAFT TO LINKEDIN (Agentic Action)
-   ✅ CHANGED: nova-pro → claude-sonnet-4-6
-   Sonnet 4.6 is the recommended model for agentic tool calling
+   FEATURE 2: AUTO-DRAFT TO LINKEDIN (FIXED)
+
+   Changes from original:
+   - Now accepts `postId` in request body
+   - Saves linkedinPostId, linkedinUrl, publishedAt to Post document
+   - Returns postId back to frontend so it can track the post
    ========================================================== */
 exports.autoDraftToLinkedIn = async (req, res) => {
     try {
-        const { postContent } = req.body;
+        const { postContent, postId } = req.body; // ← postId added
+
         const user = await User.findById(req.user.id);
 
-        // 1. Check if user is connected (unchanged)
         if (!user.linkedin || !user.linkedin.isConnected) {
             return res.status(400).json({
                 message: "LinkedIn not connected.",
@@ -167,30 +157,23 @@ exports.autoDraftToLinkedIn = async (req, res) => {
             });
         }
 
-        // ✅ CHANGED: Replaced ConverseCommand with anthropicClient.messages.create()
-        // Sonnet 4.6 replaces Nova Pro for agentic/tool-calling tasks
         const response = await anthropicClient.messages.create({
-            model: "claude-sonnet-4-6",          // ✅ CHANGED: was amazon.nova-pro-v1:0
+            model: "claude-sonnet-4-6",
             max_tokens: 1000,
-            tools: [linkedinTool],               // ✅ CHANGED: Anthropic tools array format
+            tools: [linkedinTool],
             messages: [{
                 role: "user",
                 content: `I want to post this content to my LinkedIn. Please format it properly and use the tool to draft it: ${postContent}`
             }]
         });
 
-        // ✅ CHANGED: Anthropic stop reason for tool use is "tool_use" (same name, different structure)
-        // Bedrock: response.stopReason === "tool_use", content.find(c => c.toolUse)
-        // Anthropic: response.stop_reason === "tool_use", content.find(c => c.type === "tool_use")
         const stopReason = response.stop_reason;
 
         if (stopReason === "tool_use") {
-            // ✅ CHANGED: Anthropic tool call block uses type === "tool_use" and block.input
-            // Bedrock used: c.toolUse and toolCall.toolUse.input
             const toolCall = response.content.find(c => c.type === "tool_use");
-            const { commentary } = toolCall.input;  // ✅ CHANGED: was toolCall.toolUse.input
+            const { commentary } = toolCall.input;
 
-            // 4. THE ACTION: Execute the actual LinkedIn API call (unchanged)
+            // ── Publish to LinkedIn ────────────────────────────────────────────
             const linkedinRes = await axios.post('https://api.linkedin.com/v2/posts', {
                 author: user.linkedin.personUrn,
                 commentary: commentary,
@@ -208,18 +191,46 @@ exports.autoDraftToLinkedIn = async (req, res) => {
                 }
             });
 
-            const linkedinId = linkedinRes.data.id || linkedinRes.headers['x-restli-id'] || linkedinRes.headers['x-linkedin-id'];
+            // ── Capture LinkedIn post ID ───────────────────────────────────────
+            const linkedinId = linkedinRes.data.id
+                || linkedinRes.headers['x-restli-id']
+                || linkedinRes.headers['x-linkedin-id']
+                || null;
+
+            const linkedinUrl = linkedinId
+                ? `https://www.linkedin.com/feed/update/${linkedinId}/`
+                : "";
 
             console.log("LOG: Captured LinkedIn ID:", linkedinId);
 
-            let linkedinUrl = "";
-            if (linkedinId) {
-                linkedinUrl = `https://www.linkedin.com/feed/update/${linkedinId}/`;
+            // ── Save to Post document (NEW) ────────────────────────────────────
+            // Only update if postId was passed and exists in DB
+            if (postId) {
+                try {
+                    await Post.findOneAndUpdate(
+                        { _id: postId, user: req.user.id }, // user check = security
+                        {
+                            $set: {
+                                linkedinPostId: linkedinId,
+                                linkedinUrl:    linkedinUrl,
+                                publishedAt:    new Date(),
+                            }
+                        }
+                    );
+                    console.log("LOG: Saved linkedinPostId to Post:", postId);
+                } catch (dbErr) {
+                    // Don't fail the whole request if DB save fails
+                    console.error("LOG: Failed to save linkedinPostId to Post:", dbErr.message);
+                }
+            } else {
+                console.warn("LOG: No postId sent — linkedinPostId not saved to DB.");
             }
 
             return res.status(200).json({
                 message: "Post successfully dispatched!",
-                linkedinUrl: linkedinUrl
+                linkedinUrl,
+                linkedinPostId: linkedinId, // ← also return it to frontend
+                postId,                     // ← echo back so frontend can update state
             });
 
         } else {

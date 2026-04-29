@@ -3,7 +3,7 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import {
-  PenTool, FileText, Eye, ArrowRight,
+  PenTool, FileText, ArrowRight,
   Sparkles, Clock, Star, Loader2,
   AlertTriangle, TrendingUp, Mic2,
   BarChart2, Lightbulb, CheckCircle2,
@@ -18,45 +18,33 @@ interface BrandInsight {
   sub: string;
 }
 
-interface BrandBar {
-  label: string;
-  value: number; // 0–100
-  color: "green" | "amber" | "red";
+interface BrandIntelligence {
+  nicheConsistency: number;
+  voiceConsistency: number;
+  postingFrequency: number;
+  contentVariety:   number;
 }
 
-// ─── Static placeholder data (replace with API responses later) ───────────────
-const BRAND_BARS: BrandBar[] = [
-  { label: "Niche consistency",  value: 82, color: "green" },
-  { label: "Voice consistency",  value: 91, color: "green" },
-  { label: "Posting frequency",  value: 68, color: "amber" },
-  { label: "Content variety",    value: 44, color: "red"   },
-];
+interface BrandScore {
+  score:        number;
+  weeklyChange: number;
+}
 
-const BRAND_INSIGHTS: BrandInsight[] = [
-  {
-    type: "success",
-    text: "Hook-style posts get 3.4× more comments than question posts",
-    sub: "Based on your last 12 posts",
-  },
-  {
-    type: "warning",
-    text: "Tuesday 9 am posts outperform Friday posts by 2.1×",
-    sub: "Your best posting window",
-  },
-  {
-    type: "info",
-    text: "You haven't posted about case studies — top topic in your niche",
-    sub: "Content gap opportunity",
-  },
-];
+interface BrandDrift {
+  driftDetected: boolean;
+  driftTopic:    string | null;
+  userNiche:     string | null;
+}
 
-// Brand drift — set to true to preview the alert banner
-const BRAND_DRIFT_ACTIVE = true;
+interface EngagementData {
+  avgEngagement: number;
+  nicheAvg:      number;
+}
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-function barColor(color: BrandBar["color"]) {
-  if (color === "green") return "bg-emerald-500";
-  if (color === "amber") return "bg-amber-500";
+function barColor(value: number) {
+  if (value >= 70) return "bg-emerald-500";
+  if (value >= 40) return "bg-amber-500";
   return "bg-red-500";
 }
 
@@ -68,99 +56,182 @@ function insightIcon(type: BrandInsight["type"]) {
   return <Info className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />;
 }
 
+const API = (path: string) => `${import.meta.env.VITE_API_URL}${path}`;
+const authHeaders = () => ({ "auth-token": localStorage.getItem("authToken") || "" });
+
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function DashboardPage() {
-  const [posts, setPosts]       = useState<any[]>([]);
-  const [loading, setLoading]   = useState(true);
-  const [profile, setProfile]   = useState<any>(null);
-  const [getUser, setGetUser]   = useState<any>(null);
 
+  // ── Core state ──────────────────────────────────────────────────────────────
+  const [posts,   setPosts]   = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [getUser, setGetUser] = useState<any>(null);
+
+  // ── Analytics state ─────────────────────────────────────────────────────────
+  const [brandScore,       setBrandScore]       = useState<BrandScore | null>(null);
+  const [intelligence,     setIntelligence]     = useState<BrandIntelligence | null>(null);
+  const [drift,            setDrift]            = useState<BrandDrift | null>(null);
+  const [insights,         setInsights]         = useState<BrandInsight[]>([]);
+  const [engagement,       setEngagement]       = useState<EngagementData | null>(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(true);
+
+  // ─── Dismiss spotlight ──────────────────────────────────────────────────────
   const handleDismissSpotlight = async () => {
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/auth/onboarding/dismiss-guide`,
-        {
-          method: "PUT",
-          headers: { "auth-token": localStorage.getItem("authToken") || "" },
-        }
-      );
+      const res = await fetch(API("/api/auth/onboarding/dismiss-guide"), {
+        method: "PUT",
+        headers: authHeaders(),
+      });
       if (res.ok) setGetUser((prev: any) => ({ ...prev, showSpotlight: false }));
     } catch (err) {
       console.error("Failed to dismiss guide", err);
     }
   };
 
+  // ─── Fetch 1: core data (posts + user) — fast, no AI ────────────────────────
   useEffect(() => {
-    const fetchData = async () => {
-      const token = localStorage.getItem("authToken") || "";
+    const fetchCoreData = async () => {
       try {
-        const [postsRes, profileRes, userRes] = await Promise.all([
-          fetch(`${import.meta.env.VITE_API_URL}/api/posts`,           { headers: { "auth-token": token } }),
-          fetch(`${import.meta.env.VITE_API_URL}/api/profile/me`,      { headers: { "auth-token": token } }),
-          fetch(`${import.meta.env.VITE_API_URL}/api/auth/get-user`,   { headers: { "auth-token": token } }),
+        const [postsRes, userRes] = await Promise.all([
+          fetch(API("/api/posts"),         { headers: authHeaders() }),
+          fetch(API("/api/auth/get-user"), { headers: authHeaders() }),
         ]);
-        const postsData   = await postsRes.json();
-        const profileData = await profileRes.json();
-        const userData    = await userRes.json();
-        if (postsRes.ok)   setPosts(postsData);
-        if (profileRes.ok) setProfile(profileData.profile);
-        if (userRes.ok)    setGetUser(userData);
+        const postsData = await postsRes.json();
+        const userData  = await userRes.json();
+        if (postsRes.ok) setPosts(postsData);
+        if (userRes.ok)  setGetUser(userData);
       } catch (err) {
-        console.error("Failed to fetch dashboard data", err);
+        console.error("Core data fetch failed", err);
       } finally {
         setLoading(false);
       }
     };
-    fetchData();
+    fetchCoreData();
   }, []);
 
-  // ── Stats (4 cards now) ────────────────────────────────────────────────────
+  // ─── Fetch 2: analytics — runs in parallel, won't block core UI ─────────────
+  // Uses Promise.allSettled so one failing route doesn't kill the others
+  useEffect(() => {
+    const fetchAnalytics = async () => {
+      setAnalyticsLoading(true);
+      try {
+        const [scoreRes, intelligenceRes, driftRes, insightsRes, engagementRes] =
+          await Promise.allSettled([
+            fetch(API("/api/analytics/brand-score"),        { headers: authHeaders() }),
+            fetch(API("/api/analytics/brand-intelligence"), { headers: authHeaders() }),
+            fetch(API("/api/analytics/brand-drift"),        { headers: authHeaders() }),
+            fetch(API("/api/analytics/insights"),           { headers: authHeaders() }),
+            fetch(API("/api/analytics/engagement"),         { headers: authHeaders() }),
+          ]);
+
+        if (scoreRes.status === "fulfilled" && scoreRes.value.ok) {
+          const d = await scoreRes.value.json();
+          setBrandScore({ score: d.score, weeklyChange: d.weeklyChange });
+        }
+
+        if (intelligenceRes.status === "fulfilled" && intelligenceRes.value.ok) {
+          const d = await intelligenceRes.value.json();
+          setIntelligence(d);
+        }
+
+        if (driftRes.status === "fulfilled" && driftRes.value.ok) {
+          const d = await driftRes.value.json();
+          setDrift(d);
+        }
+
+        if (insightsRes.status === "fulfilled" && insightsRes.value.ok) {
+          const d = await insightsRes.value.json();
+          setInsights(d.insights || []);
+        }
+
+        if (engagementRes.status === "fulfilled" && engagementRes.value.ok) {
+          const d = await engagementRes.value.json();
+          setEngagement({ avgEngagement: d.avgEngagement, nicheAvg: d.nicheAvg });
+        }
+
+      } catch (err) {
+        console.error("Analytics fetch failed", err);
+      } finally {
+        setAnalyticsLoading(false);
+      }
+    };
+    fetchAnalytics();
+  }, []);
+
+  // ─── Derived values ──────────────────────────────────────────────────────────
+  const isPro = getUser?.plan?.toLowerCase() === "pro";
+
+  const weeklyChangeLabel = brandScore
+    ? `${brandScore.weeklyChange >= 0 ? "+" : ""}${brandScore.weeklyChange} from last week`
+    : "Calculating...";
+
+  const engagementTrend = engagement
+    ? engagement.avgEngagement >= engagement.nicheAvg
+      ? `Above niche avg ${engagement.nicheAvg}%`
+      : `Below niche avg ${engagement.nicheAvg}%`
+    : "Fetching...";
+
+  // ─── Stat cards ──────────────────────────────────────────────────────────────
   const stats = [
     {
-      label: "Brand score",
-      // TODO: replace 74 with real brandScore from API
-      value: loading ? "..." : "74",
-      suffix: "/100",
-      icon: TrendingUp,
-      trend: "+6 from last week",
-      trendColor: "text-amber-500",
+      label:      "Brand score",
+      value:      loading || analyticsLoading
+                    ? "..."
+                    : brandScore != null ? brandScore.score.toString() : "—",
+      suffix:     "/100",
+      icon:       TrendingUp,
+      trend:      analyticsLoading ? "Calculating..." : weeklyChangeLabel,
+      trendColor: !brandScore || brandScore.weeklyChange >= 0
+                    ? "text-amber-500"
+                    : "text-red-400",
     },
     {
-      label: "Posts published",
-      value: loading ? "..." : posts.length.toString(),
-      suffix: "",
-      icon: FileText,
-      trend: "All time",
+      label:      "Posts published",
+      value:      loading ? "..." : posts.length.toString(),
+      suffix:     "",
+      icon:       FileText,
+      trend:      "All time",
       trendColor: "text-muted-foreground",
     },
     {
-      label: "Avg engagement",
-      // TODO: replace 4.2 with real avg from API
-      value: loading ? "..." : "4.2",
-      suffix: "%",
-      icon: BarChart2,
-      trend: "Above niche avg 2.8%",
-      trendColor: "text-emerald-500",
+      label:      "Avg engagement",
+      value:      analyticsLoading
+                    ? "..."
+                    : engagement != null ? engagement.avgEngagement.toString() : "—",
+      suffix:     engagement != null ? "%" : "",
+      icon:       BarChart2,
+      trend:      analyticsLoading ? "Loading..." : engagementTrend,
+      trendColor: engagement && engagement.avgEngagement >= engagement.nicheAvg
+                    ? "text-emerald-500"
+                    : "text-red-400",
     },
     {
-      label: getUser?.plan?.toLowerCase() === "pro" ? "Daily AI credits" : "AI credits used",
-      value: loading
-        ? "..."
-        : getUser?.plan?.toLowerCase() === "pro"
-          ? "∞"
-          : `${10 - (getUser?.credits ?? 10)}`,
-      suffix: getUser?.plan?.toLowerCase() === "pro" ? "" : "/10",
-      icon: Sparkles,
-      trend: getUser?.plan?.toLowerCase() === "pro" ? "Pro plan active" : "Resets in 12h",
+      label:      isPro ? "Daily AI credits" : "AI credits used",
+      value:      loading
+                    ? "..."
+                    : isPro ? "∞" : `${10 - (getUser?.credits ?? 10)}`,
+      suffix:     isPro ? "" : "/10",
+      icon:       Sparkles,
+      trend:      isPro ? "Pro plan active" : "Resets in 12h",
       trendColor: "text-muted-foreground",
     },
   ];
 
+  // ─── Brand bars (built from intelligence API response) ───────────────────────
+  const brandBars = intelligence
+    ? [
+        { label: "Niche consistency",  value: intelligence.nicheConsistency },
+        { label: "Voice consistency",  value: intelligence.voiceConsistency },
+        { label: "Posting frequency",  value: intelligence.postingFrequency },
+        { label: "Content variety",    value: intelligence.contentVariety   },
+      ]
+    : [];
+
+  // ─── Render ──────────────────────────────────────────────────────────────────
   return (
     <DashboardLayout>
       <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto w-full overflow-x-hidden">
 
-        {/* Onboarding spotlight */}
         {getUser?.showSpotlight && (
           <ProfileSpotlight onDismiss={handleDismissSpotlight} />
         )}
@@ -180,9 +251,8 @@ export default function DashboardPage() {
           </Link>
         </div>
 
-        {/* ── Voice Fingerprint ready banner (show when fingerprint exists) ── */}
-        {/* TODO: replace `false` with `!!getUser?.voiceFingerprint` */}
-        {false && (
+        {/* ── Voice Fingerprint banner — shows only when fingerprint exists ── */}
+        {!!getUser?.voiceFingerprint && (
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 p-4 rounded-xl border border-accent/30 bg-accent/5 mb-6">
             <div className="w-10 h-10 rounded-lg bg-accent/20 flex items-center justify-center shrink-0">
               <Mic2 className="w-5 h-5 text-accent" />
@@ -190,8 +260,8 @@ export default function DashboardPage() {
             <div className="flex-1 min-w-0">
               <p className="font-medium text-foreground text-sm">Your Voice Fingerprint is ready</p>
               <p className="text-xs text-muted-foreground mt-0.5">
-                {/* TODO: replace with real fingerprint summary */}
-                Analyzed 23 posts — your tone: Direct, data-driven, story-led. All posts now generated in your voice.
+                {getUser.voiceFingerprint?.summary ||
+                  "Your tone and writing style have been mapped. Posts now generate in your voice."}
               </p>
             </div>
             <Link to="/dashboard/voice" className="shrink-0">
@@ -200,8 +270,8 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* ── Upgrade banner (free users only) ───────────────────────────── */}
-        {getUser?.plan?.toLowerCase() !== "pro" && (
+        {/* ── Upgrade banner (free only) ──────────────────────────────────── */}
+        {!isPro && (
           <div className="editorial-card bg-gradient-to-r from-accent/10 to-accent/5 border-accent/20 mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-xl bg-accent/20 flex items-center justify-center shrink-0">
@@ -220,9 +290,8 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* ── Brand Drift Alert ───────────────────────────────────────────── */}
-        {/* TODO: replace BRAND_DRIFT_ACTIVE with real drift detection from API */}
-        {BRAND_DRIFT_ACTIVE && (
+        {/* ── Brand Drift Alert — fully dynamic ──────────────────────────── */}
+        {drift?.driftDetected && (
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 p-4 rounded-xl border border-red-500/30 bg-red-500/5 mb-6">
             <div className="w-10 h-10 rounded-lg bg-red-500/15 flex items-center justify-center shrink-0">
               <AlertTriangle className="w-5 h-5 text-red-400" />
@@ -230,12 +299,17 @@ export default function DashboardPage() {
             <div className="flex-1 min-w-0">
               <p className="font-medium text-red-400 text-sm">Brand drift detected</p>
               <p className="text-xs text-muted-foreground mt-0.5">
-                {/* TODO: replace with dynamic drift topic from API */}
-                Your last 3 posts are about general productivity — your niche is LinkedIn growth. Refocus before it affects reach.
+                {drift.driftTopic
+                  ? `Your last 3 posts are about "${drift.driftTopic}" — your niche is ${drift.userNiche}. Refocus before it affects reach.`
+                  : "Your recent posts seem off-niche. Refocus before it affects reach."}
               </p>
             </div>
             <Link to="/dashboard/write" className="shrink-0">
-              <Button variant="outline" size="sm" className="border-red-500/40 text-red-400 hover:bg-red-500/10">
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-red-500/40 text-red-400 hover:bg-red-500/10"
+              >
                 Fix this
               </Button>
             </Link>
@@ -253,7 +327,9 @@ export default function DashboardPage() {
               <div className="text-3xl font-bold text-foreground mb-1">
                 {stat.value}
                 {stat.suffix && (
-                  <span className="text-base font-normal text-muted-foreground">{stat.suffix}</span>
+                  <span className="text-base font-normal text-muted-foreground">
+                    {stat.suffix}
+                  </span>
                 )}
               </div>
               <div className="text-sm text-muted-foreground">{stat.label}</div>
@@ -272,23 +348,33 @@ export default function DashboardPage() {
                 Brand Intelligence
               </h2>
             </div>
-            <div className="space-y-4">
-              {BRAND_BARS.map((bar) => (
-                <div key={bar.label}>
-                  <div className="flex justify-between text-xs mb-1.5">
-                    <span className="text-muted-foreground">{bar.label}</span>
-                    <span className="text-foreground font-medium">{bar.value}%</span>
+
+            {analyticsLoading ? (
+              <div className="flex justify-center py-6">
+                <Loader2 className="w-5 h-5 animate-spin text-accent" />
+              </div>
+            ) : brandBars.length > 0 ? (
+              <div className="space-y-4">
+                {brandBars.map((bar) => (
+                  <div key={bar.label}>
+                    <div className="flex justify-between text-xs mb-1.5">
+                      <span className="text-muted-foreground">{bar.label}</span>
+                      <span className="text-foreground font-medium">{bar.value}%</span>
+                    </div>
+                    <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                      <div
+                        className={`h-full rounded-full ${barColor(bar.value)} transition-all duration-700`}
+                        style={{ width: `${bar.value}%` }}
+                      />
+                    </div>
                   </div>
-                  <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-                    <div
-                      className={`h-full rounded-full ${barColor(bar.color)} transition-all duration-700`}
-                      style={{ width: `${bar.value}%` }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-            {/* TODO: wire BRAND_BARS values from /api/analytics/brand-score */}
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground py-2">
+                Write a few posts to see your brand intelligence scores.
+              </p>
+            )}
           </div>
 
           {/* What's Working insights */}
@@ -299,18 +385,28 @@ export default function DashboardPage() {
                 What's Working
               </h2>
             </div>
-            <div className="space-y-3">
-              {BRAND_INSIGHTS.map((insight, i) => (
-                <div key={i} className="flex items-start gap-2.5">
-                  {insightIcon(insight.type)}
-                  <div>
-                    <p className="text-sm text-foreground leading-snug">{insight.text}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">{insight.sub}</p>
+
+            {analyticsLoading ? (
+              <div className="flex justify-center py-6">
+                <Loader2 className="w-5 h-5 animate-spin text-accent" />
+              </div>
+            ) : insights.length > 0 ? (
+              <div className="space-y-3">
+                {insights.map((insight, i) => (
+                  <div key={i} className="flex items-start gap-2.5">
+                    {insightIcon(insight.type)}
+                    <div>
+                      <p className="text-sm text-foreground leading-snug">{insight.text}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{insight.sub}</p>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
-            {/* TODO: wire BRAND_INSIGHTS from /api/analytics/insights */}
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground py-2">
+                Write a few posts to start seeing insights.
+              </p>
+            )}
           </div>
         </div>
 
@@ -329,50 +425,69 @@ export default function DashboardPage() {
                 <Loader2 className="w-6 h-6 animate-spin text-accent" />
               </div>
             ) : posts.length > 0 ? (
-              posts.slice(0, 3).map((post) => (
-                <Link
-                  to={`/dashboard/posts/${post._id}`}
-                  key={post._id}
-                  className="group relative flex items-center justify-between p-4 bg-transparent hover:bg-white dark:hover:bg-slate-900/50 rounded-xl transition-all duration-300 ease-out border border-transparent hover:border-border hover:shadow-sm"
-                >
-                  {/* Left accent line on hover */}
-                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-0 group-hover:h-8 bg-accent rounded-r-full transition-all duration-300" />
+              posts.slice(0, 3).map((post) => {
+                // Per-post engagement rate — only for LinkedIn-published posts
+                const likes       = post.engagement?.likes       ?? 0;
+                const comments    = post.engagement?.comments    ?? 0;
+                const impressions = post.engagement?.impressions ?? 0;
+                const denominator = impressions > 0 ? impressions : 500;
+                const engRate = post.linkedinPostId
+                  ? parseFloat((((likes + comments) / denominator) * 100).toFixed(1))
+                  : null;
 
-                  <div className="flex-1 min-w-0 pr-4">
-                    <h4 className="font-medium text-foreground truncate block group-hover:text-accent transition-colors duration-300">
-                      {post.prompt}
-                    </h4>
-                    <div className="flex items-center gap-3 mt-1.5">
-                      <p className="text-xs text-muted-foreground flex items-center gap-1.5 opacity-80">
-                        <Clock className="w-3.5 h-3.5 shrink-0" />
-                        {new Date(post.createdAt).toLocaleDateString(undefined, {
-                          month: "short", day: "numeric", year: "numeric",
-                        })}
-                      </p>
-                      {/* Post type badge — TODO: replace "SHORT" with post.style from API */}
-                      {post.style && (
-                        <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-accent/15 text-accent uppercase tracking-wide">
-                          {post.style}
-                        </span>
-                      )}
-                      {/* Engagement badge — TODO: replace with real post.engagement from API */}
-                      {post.engagement != null && (
-                        <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full uppercase tracking-wide ${
-                          post.engagement >= 3
-                            ? "bg-emerald-500/15 text-emerald-500"
-                            : "bg-red-500/15 text-red-400"
-                        }`}>
-                          {post.engagement}% eng.
-                        </span>
-                      )}
+                return (
+                  <Link
+                    to={`/dashboard/posts/${post._id}`}
+                    key={post._id}
+                    className="group relative flex items-center justify-between p-4 bg-transparent hover:bg-white dark:hover:bg-slate-900/50 rounded-xl transition-all duration-300 ease-out border border-transparent hover:border-border hover:shadow-sm"
+                  >
+                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-0 group-hover:h-8 bg-accent rounded-r-full transition-all duration-300" />
+
+                    <div className="flex-1 min-w-0 pr-4">
+                      <h4 className="font-medium text-foreground truncate block group-hover:text-accent transition-colors duration-300">
+                        {post.prompt}
+                      </h4>
+                      <div className="flex items-center gap-3 mt-1.5 flex-wrap">
+                        <p className="text-xs text-muted-foreground flex items-center gap-1.5 opacity-80">
+                          <Clock className="w-3.5 h-3.5 shrink-0" />
+                          {new Date(post.createdAt).toLocaleDateString(undefined, {
+                            month: "short", day: "numeric", year: "numeric",
+                          })}
+                        </p>
+
+                        {/* Post type badge */}
+                        {post.postType && (
+                          <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-accent/15 text-accent uppercase tracking-wide">
+                            {post.postType}
+                          </span>
+                        )}
+
+                        {/* Engagement rate badge — only for published posts with data */}
+                        {engRate !== null && (
+                          <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full uppercase tracking-wide ${
+                            engRate >= 3
+                              ? "bg-emerald-500/15 text-emerald-500"
+                              : "bg-red-500/15 text-red-400"
+                          }`}>
+                            {engRate}% eng.
+                          </span>
+                        )}
+
+                        {/* "On LinkedIn" badge for published posts without engagement yet */}
+                        {post.linkedinPostId && engRate === null && (
+                          <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-400 uppercase tracking-wide">
+                            On LinkedIn
+                          </span>
+                        )}
+                      </div>
                     </div>
-                  </div>
 
-                  <div className="flex items-center justify-center w-8 h-8 rounded-full bg-muted group-hover:bg-accent/10 group-hover:text-accent transition-all duration-300">
-                    <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
-                  </div>
-                </Link>
-              ))
+                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-muted group-hover:bg-accent/10 group-hover:text-accent transition-all duration-300">
+                      <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
+                    </div>
+                  </Link>
+                );
+              })
             ) : (
               <p className="text-sm text-muted-foreground py-4 text-center">
                 No posts yet. Start writing to see them here!

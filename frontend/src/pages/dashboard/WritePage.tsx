@@ -56,6 +56,7 @@ export default function WritePage() {
   const [isLimitReached, setIsLimitReached] = useState(false);
   const [isLinkedInConnected, setIsLinkedInConnected] = useState(false);
   const [isAgentActing, setIsAgentActing] = useState<string | null>(null);
+
   useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 1024); // lg breakpoint
@@ -105,7 +106,7 @@ export default function WritePage() {
           "Content-Type": "application/json",
           "auth-token": localStorage.getItem("authToken") || ""
         },
-        body: JSON.stringify({ postContent: content }),
+        body: JSON.stringify({ postContent: content, postId: messageId }),
       });
 
       const data = await response.json();
@@ -342,6 +343,7 @@ export default function WritePage() {
           description: "This post is now stored in your library.",
         });
       }
+
     } catch (err) {
       toast({ variant: "destructive", title: "Error", description: "Save failed." });
     }
@@ -575,30 +577,27 @@ export default function WritePage() {
                                 <span className="hidden xs:inline">Copy</span>
                               </Button>
 
+                              {/* AGENT BUTTON: Now requires saving first */}
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => handleSavePost(msg)}
-                                className="h-7 md:h-8 rounded-lg text-[10px] md:text-xs px-2 md:px-3"
-                              >
-                                <Bookmark className="w-3 h-3 md:mr-2" />
-                                <span>Save</span>
-                              </Button>
-
-                              {/* AGENT BUTTON: Always stays active so user can post again */}
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                // Button is only disabled if the agent is already busy acting
+                                // Only physically disable if the agent is currently acting
                                 disabled={isAgentActing !== null}
                                 className={cn(
                                   "h-7 md:h-8 rounded-lg text-[10px] md:text-xs px-2 md:px-3 transition-all",
+                                  !msg.isSaved && "opacity-50 cursor-not-allowed", // Visual cue if not saved
                                   isLinkedInConnected
                                     ? "text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20"
                                     : "text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 border border-dashed border-amber-200"
-                                  // Changed color to Amber if disconnected to catch their eye
                                 )}
                                 onClick={() => {
+                                  if (!msg.isSaved) {
+                                    return toast({
+                                      title: "Save Required",
+                                      description: "Please save this post to your library before posting to LinkedIn.",
+                                    });
+                                  }
+
                                   if (isLinkedInConnected) {
                                     handleAutoDraft(msg.id, msg.content);
                                   } else {
@@ -609,9 +608,9 @@ export default function WritePage() {
                                 {isAgentActing === msg.id ? (
                                   <Loader2 className="w-3 h-3 md:mr-2 animate-spin" />
                                 ) : isLinkedInConnected ? (
-                                  <Zap className="w-3 h-3 md:mr-2 fill-current" />
+                                  <Zap className={cn("w-3 h-3 md:mr-2", msg.isSaved ? "fill-current" : "")} />
                                 ) : (
-                                  <Link2 className="w-3 h-3 md:mr-2" /> // Show a Link icon if not connected
+                                  <Link2 className="w-3 h-3 md:mr-2" />
                                 )}
 
                                 <span>
@@ -619,7 +618,7 @@ export default function WritePage() {
                                     ? "Agent Acting..."
                                     : isLinkedInConnected
                                       ? (msg.lastLinkedinUrl ? "Post Again" : "Post to LinkedIn")
-                                      : "Connect LinkedIn" // Clear Call to Action
+                                      : "Connect LinkedIn"
                                   }
                                 </span>
                               </Button>
