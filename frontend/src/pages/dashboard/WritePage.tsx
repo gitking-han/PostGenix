@@ -577,6 +577,17 @@ export default function WritePage() {
                                 <span className="hidden xs:inline">Copy</span>
                               </Button>
 
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleSavePost(msg)}
+                                className="h-7 md:h-8 rounded-lg text-[10px] md:text-xs px-2 md:px-3"
+                              >
+                                <Bookmark className="w-3 h-3 md:mr-2" />
+                                <span>Save</span>
+                              </Button>
+
+                              {/* AGENT BUTTON: Always stays active so user can post again */}
                               {/* AGENT BUTTON: Now requires saving first */}
                               <Button
                                 variant="ghost"
