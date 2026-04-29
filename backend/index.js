@@ -10,6 +10,8 @@ const paddleRoutes = require('./routes/paddle');
 const postRoutes = require('./routes/postRoutes');
 const chatRoutes = require('./routes/chatRoutes');
 const aiRoutes = require('./routes/aiRoutes')
+const analyticsRoutes = require('./routes/analytics');
+
 connectToMongo();
 
 const app = express();
@@ -47,6 +49,7 @@ app.use('/api/posts', postRoutes);
 app.use('/api/chats', chatRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/mail', require('./routes/mail'));
+app.use('/api/analytics', analyticsRoutes);
 
 
 app.listen(port, () => {
