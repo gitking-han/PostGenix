@@ -27,7 +27,13 @@ app.use(express.json({
 }));
 // --- CRITICAL CHANGE END ---
 
-app.use(cors()); 
+const allowedOrigins = process.env.FRONTEND_URL.split(",");
+
+app.use(cors({
+  origin: allowedOrigins,
+  credentials: true
+}));
+
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 app.use(session({
