@@ -56,6 +56,7 @@ export default function WritePage() {
   const [isLimitReached, setIsLimitReached] = useState(false);
   const [isLinkedInConnected, setIsLinkedInConnected] = useState(false);
   const [isAgentActing, setIsAgentActing] = useState<string | null>(null);
+  const [voiceModeEnabled, setVoiceModeEnabled] = useState(false);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -417,6 +418,9 @@ export default function WritePage() {
             onNewChat={handleNewChat}
             onDeleteChat={handleDeleteChat}
             onApplyBranding={handleApplyBranding} // <-- ADD THIS PROP
+            voiceModeEnabled={voiceModeEnabled}
+            onVoiceModeToggle={setVoiceModeEnabled}
+
           />
         </div>
 
@@ -444,6 +448,9 @@ export default function WritePage() {
                     onNewChat={handleNewChat}
                     onDeleteChat={handleDeleteChat}
                     onApplyBranding={handleApplyBranding}
+                    voiceModeEnabled={voiceModeEnabled}
+                    onVoiceModeToggle={setVoiceModeEnabled}
+
                   />
                 </div>
               </motion.div>

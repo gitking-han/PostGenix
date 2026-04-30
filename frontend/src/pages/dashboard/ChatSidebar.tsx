@@ -5,9 +5,10 @@ import {
     AlertTriangle,
     PanelLeftClose,
     PanelLeftOpen,
-    History,    // New icon for tabs
-    UserCircle, // New icon for Profile Lab
-    Sparkles // Updated
+    History,
+    UserCircle,
+    Sparkles,
+    Mic2, // Voice Mode icon
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +16,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ProfileAnalyzer } from "./ProfileAnalyzer";
+import { Switch } from "@/components/ui/switch"; // You may need to add this component
+
 /**
  * 1. CUSTOM DELETE MODAL
  */
@@ -42,11 +45,32 @@ function DeleteConfirmModal({ isOpen, onClose, onConfirm }: any) {
 /**
  * 2. CHAT SIDEBAR COMPONENT
  */
-export function ChatSidebar({ onSelectChat, onNewChat, onDeleteChat, chats = [], onApplyBranding }: any) {
+interface ChatSidebarProps {
+    onSelectChat: (id: string) => void;
+    onNewChat: () => void;
+    onDeleteChat: (id: string) => void;
+    chats?: any[];
+    onApplyBranding: (data: string) => void;
+    voiceModeEnabled: boolean;        // NEW: controlled by WritePage
+    onVoiceModeToggle: (enabled: boolean) => void; // NEW: callback to WritePage
+    voiceFingerprint?: any;           // NEW: user's voice fingerprint data from API
+}
+
+export function ChatSidebar({
+    onSelectChat,
+    onNewChat,
+    onDeleteChat,
+    chats = [],
+    onApplyBranding,
+    voiceModeEnabled,
+    onVoiceModeToggle,
+    voiceFingerprint,
+}: ChatSidebarProps) {
     const [searchQuery, setSearchQuery] = useState("");
     const [idToDelete, setIdToDelete] = useState<string | null>(null);
     const [isOpen, setIsOpen] = useState(true);
-    const [activeTab, setActiveTab] = useState<"history" | "profile">("history");
+    const [activeTab, setActiveTab] = useState<"history" | "profile" | "voice">("history");
+
     const formatDate = (dateStr: string) => {
         if (!dateStr) return "Just now";
         const date = new Date(dateStr);
@@ -59,7 +83,7 @@ export function ChatSidebar({ onSelectChat, onNewChat, onDeleteChat, chats = [],
 
     return (
         <>
-            {/* Maximize Button (Using ChevronRight to match Dashboard style) */}
+            {/* Maximize Button */}
             <AnimatePresence>
                 {!isOpen && (
                     <motion.div
@@ -94,33 +118,45 @@ export function ChatSidebar({ onSelectChat, onNewChat, onDeleteChat, chats = [],
                     onClose={() => setIdToDelete(null)}
                     onConfirm={() => { onDeleteChat(idToDelete); setIdToDelete(null); }}
                 />
+
+                {/* ── TAB BAR (3 tabs now) ──────────────────────────────────── */}
                 <div className="flex border-b border-border min-w-[320px]">
                     <button
                         onClick={() => setActiveTab("history")}
-                        className={`flex-1 flex items-center justify-center gap-2 py-4 text-xs font-bold transition-all
+                        className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-[10px] font-bold transition-all
                         ${activeTab === "history"
                                 ? "text-accent border-b-2 border-accent bg-accent/5"
                                 : "text-muted-foreground hover:text-foreground hover:bg-muted/20"}`}
                     >
-                        <History className="w-4 h-4" />
+                        <History className="w-3.5 h-3.5" />
                         HISTORY
                     </button>
                     <button
                         onClick={() => setActiveTab("profile")}
-                        className={`flex-1 flex items-center justify-center gap-2 py-4 text-xs font-bold transition-all
+                        className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-[10px] font-bold transition-all
                         ${activeTab === "profile"
                                 ? "text-accent border-b-2 border-accent bg-accent/5"
                                 : "text-muted-foreground hover:text-foreground hover:bg-muted/20"}`}
                     >
-                        <UserCircle className="w-4 h-4" />
-                        PROFILE LAB
+                        <UserCircle className="w-3.5 h-3.5" />
+                        PROFILE
+                    </button>
+                    <button
+                        onClick={() => setActiveTab("voice")}
+                        className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-[10px] font-bold transition-all
+                        ${activeTab === "voice"
+                                ? "text-accent border-b-2 border-accent bg-accent/5"
+                                : "text-muted-foreground hover:text-foreground hover:bg-muted/20"}`}
+                    >
+                        <Mic2 className="w-3.5 h-3.5" />
+                        VOICE
                     </button>
                 </div>
 
-                {/* Header Area */}
+                {/* ── TAB CONTENT ───────────────────────────────────────────── */}
                 <div className="flex-1 flex flex-col overflow-hidden">
                     {activeTab === "history" ? (
-                        /* --- HISTORY TAB CONTENT --- */
+                        /* --- HISTORY TAB --- */
                         <>
                             <div className="p-4 space-y-4">
                                 <div className="flex items-center justify-between">
@@ -151,23 +187,14 @@ export function ChatSidebar({ onSelectChat, onNewChat, onDeleteChat, chats = [],
                                 </div>
                             </div>
 
-                            {/* List Area */}
                             <ScrollArea className="flex-1 w-full">
-                                <div className="flex flex-col gap-1 p-3"> {/* Use flex column with gap for consistent spacing */}
+                                <div className="flex flex-col gap-1 p-3">
                                     {filteredChats.length > 0 ? (
                                         filteredChats.map((chat: any) => (
-                                            <div
-                                                key={chat._id}
-                                                className="group/item relative w-full overflow-hidden rounded-xl"
-                                            >
+                                            <div key={chat._id} className="group/item relative w-full overflow-hidden rounded-xl">
                                                 <button
                                                     onClick={() => onSelectChat(chat._id)}
-                                                    className={`
-                            w-full flex flex-col items-start gap-1 p-3 transition-all text-left
-                            hover:bg-white/[0.05] active:bg-white/[0.08]
-                           
-                            border border-transparent
-                        `}
+                                                    className="w-full flex flex-col items-start gap-1 p-3 transition-all text-left hover:bg-white/[0.05] active:bg-white/[0.08] border border-transparent"
                                                 >
                                                     <div className="w-full flex justify-between items-center mb-0.5">
                                                         <span className="text-[13px] font-medium truncate text-zinc-100 pr-2">
@@ -177,13 +204,10 @@ export function ChatSidebar({ onSelectChat, onNewChat, onDeleteChat, chats = [],
                                                             {formatDate(chat.updatedAt)}
                                                         </span>
                                                     </div>
-
                                                     <p className="text-[11px] text-zinc-500 line-clamp-1 w-full italic">
                                                         {chat.lastPreview || "No preview..."}
                                                     </p>
                                                 </button>
-
-                                                {/* Delete Button - Positioned exactly on the right */}
                                                 <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center justify-center opacity-0 group-hover/item:opacity-100 transition-all">
                                                     <Button
                                                         variant="ghost"
@@ -207,8 +231,8 @@ export function ChatSidebar({ onSelectChat, onNewChat, onDeleteChat, chats = [],
                                 </div>
                             </ScrollArea>
                         </>
-                    ) : (
-                        /* --- PROFILE LAB TAB CONTENT --- */
+                    ) : activeTab === "profile" ? (
+                        /* --- PROFILE LAB TAB --- */
                         <ScrollArea className="flex-1 w-full">
                             <div className="p-4 space-y-4">
                                 <div className="flex items-center justify-between">
@@ -224,15 +248,117 @@ export function ChatSidebar({ onSelectChat, onNewChat, onDeleteChat, chats = [],
                                         <PanelLeftClose className="w-4 h-4" />
                                     </Button>
                                 </div>
-
                                 <ProfileAnalyzer onApplyBranding={(data: string) => {
-                                    onApplyBranding(data); // Call the function passed from WritePage
+                                    onApplyBranding(data);
                                 }} />
-                                {/* <div className="p-8 text-center border border-dashed border-border rounded-2xl bg-accent/5">
-                                    <p className="text-xs text-muted-foreground">
-                                        Profile Analyzer UI ready for Step 2 setup.
-                                    </p>
-                                </div> */}
+                            </div>
+                        </ScrollArea>
+                    ) : (
+                        /* --- VOICE MODE TAB (NEW) --- */
+                        <ScrollArea className="flex-1 w-full">
+                            <div className="p-4 space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <h2 className="text-sm font-bold tracking-widest text-accent uppercase flex items-center gap-2">
+                                        <Mic2 className="w-4 h-4" /> Voice Mode
+                                    </h2>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => setIsOpen(false)}
+                                        className="h-8 w-8 text-muted-foreground"
+                                    >
+                                        <PanelLeftClose className="w-4 h-4" />
+                                    </Button>
+                                </div>
+
+                                {/* Voice Mode Toggle */}
+                                <div className="flex items-center justify-between p-4 rounded-xl border border-border bg-accent/5">
+                                    <div className="flex-1">
+                                        <p className="text-sm font-medium text-foreground">Enable Voice Mode</p>
+                                        <p className="text-xs text-muted-foreground mt-0.5">
+                                            Posts will be generated in your unique voice
+                                        </p>
+                                    </div>
+                                    <Switch
+                                        checked={voiceModeEnabled}
+                                        onCheckedChange={onVoiceModeToggle}
+                                        className="ml-3"
+                                    />
+                                </div>
+
+                                {/* Fingerprint Status */}
+                                {voiceFingerprint ? (
+                                    <div className="p-4 rounded-xl border border-accent/30 bg-accent/5 space-y-3">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-8 h-8 rounded-lg bg-accent/20 flex items-center justify-center">
+                                                <Mic2 className="w-4 h-4 text-accent" />
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-medium text-foreground">Voice Fingerprint Ready</p>
+                                                <p className="text-xs text-muted-foreground">
+                                                    {voiceFingerprint.postsAnalyzed || 0} posts analyzed
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        {/* Tone tags */}
+                                        {voiceFingerprint.tone && (
+                                            <div>
+                                                <p className="text-xs font-medium text-muted-foreground mb-2">Your Tone:</p>
+                                                <div className="flex flex-wrap gap-1.5">
+                                                    {voiceFingerprint.tone.map((t: string, i: number) => (
+                                                        <span
+                                                            key={i}
+                                                            className="text-[10px] font-medium px-2 py-1 rounded-full bg-accent/15 text-accent uppercase tracking-wide"
+                                                        >
+                                                            {t}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Summary */}
+                                        {voiceFingerprint.summary && (
+                                            <p className="text-xs text-muted-foreground leading-relaxed">
+                                                {voiceFingerprint.summary}
+                                            </p>
+                                        )}
+
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="w-full text-xs"
+                                            onClick={() => {
+                                                // TODO: trigger fingerprint regeneration
+                                                // This will be wired when we build the backend route
+                                            }}
+                                        >
+                                            Regenerate Fingerprint
+                                        </Button>
+                                    </div>
+                                ) : (
+                                    /* No fingerprint yet */
+                                    <div className="p-6 rounded-xl border border-dashed border-border bg-muted/20 text-center space-y-3">
+                                        <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mx-auto">
+                                            <Mic2 className="w-6 h-6 text-muted-foreground" />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-medium text-foreground">No Voice Fingerprint Yet</p>
+                                            <p className="text-xs text-muted-foreground mt-1">
+                                                Write at least 5 posts to generate your unique voice profile
+                                            </p>
+                                        </div>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="text-xs"
+                                            disabled
+                                        >
+                                            Generate Fingerprint
+                                        </Button>
+                                    </div>
+                                )}
                             </div>
                         </ScrollArea>
                     )}
