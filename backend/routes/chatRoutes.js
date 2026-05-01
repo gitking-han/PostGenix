@@ -32,51 +32,57 @@ router.post('/save-interaction', fetchuser, async (req, res) => {
     const { chatId, userPrompt, aiResponse, postType, tone } = req.body;
 
     let chat;
+
+    const newMessages = [
+      { role: 'user', content: userPrompt },
+      { role: 'assistant', content: aiResponse }
+    ];
+
     if (chatId) {
-      // Update existing thread
       chat = await Conversation.findOneAndUpdate(
         { _id: chatId, user: req.user.id },
-        { 
-          $push: { 
-            messages: [
-              { role: 'user', content: userPrompt },
-              { role: 'assistant', content: aiResponse }
-            ] 
+
+        {
+          $push: {
+            messages: { $each: newMessages }
           },
-          $set: { lastPreview: aiResponse.substring(0, 60) + "..." }
+          $set: {
+            lastPreview: aiResponse.substring(0, 60) + "..."
+          }
         },
         { new: true }
       );
     } else {
-      // Create new thread
       chat = await Conversation.create({
         user: req.user.id,
-        title: userPrompt.substring(0, 30) + (userPrompt.length > 30 ? "..." : ""),
+        title:
+          userPrompt.substring(0, 30) +
+          (userPrompt.length > 30 ? "..." : ""),
+
         lastPreview: aiResponse.substring(0, 60) + "...",
         postType,
         tone,
-        messages: [
-          { role: 'user', content: userPrompt },
-          { role: 'assistant', content: aiResponse }
-        ]
+
+        messages: newMessages
       });
     }
+
     res.json(chat);
   } catch (err) {
+    console.error(err);
     res.status(500).json({ message: "Error saving chat" });
   }
 });
-
 // 4. Delete a chat
 router.delete('/:id', fetchuser, async (req, res) => {
-    try {
-      await Conversation.findOneAndDelete({ _id: req.params.id, user: req.user.id });
-      res.json({ message: "Deleted" });
-    } catch (err) {
-      res.status(500).json({ message: "Error deleting" });
-    }
+  try {
+    await Conversation.findOneAndDelete({ _id: req.params.id, user: req.user.id });
+    res.json({ message: "Deleted" });
+  } catch (err) {
+    res.status(500).json({ message: "Error deleting" });
+  }
 });
 router.get('/test', (req, res) => {
-    res.json({ message: "Chat routes are working!" });
+  res.json({ message: "Chat routes are working!" });
 });
 module.exports = router;

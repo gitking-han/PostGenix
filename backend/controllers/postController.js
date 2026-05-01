@@ -44,11 +44,11 @@ exports.generatePost = async (req, res) => {
         const buildVoicePersona = (fingerprint) => {
             if (!fingerprint || !fingerprint.generatedAt) return "";
 
-            const tone      = fingerprint.tone?.join(", ")     || "Professional";
-            const patterns  = fingerprint.patterns?.join("\n- ") || "";
+            const tone = fingerprint.tone?.join(", ") || "Professional";
+            const patterns = fingerprint.patterns?.join("\n- ") || "";
             const strengths = fingerprint.strengths?.join(", ") || "";
-            const summary   = fingerprint.summary              || "";
-            const opening   = fingerprint.openingStyle         || "";
+            const summary = fingerprint.summary || "";
+            const opening = fingerprint.openingStyle || "";
 
             return `
 ---
@@ -80,8 +80,8 @@ The output must feel like the user sat down and wrote their best post today.
         };
 
         // ── Resolve voice fingerprint if voiceMode is on ──────────────────────
-        const fingerprint   = voiceMode ? user.voiceFingerprint : null;
-        const voicePersona  = buildVoicePersona(fingerprint);
+        const fingerprint = voiceMode ? user.voiceFingerprint : null;
+        const voicePersona = buildVoicePersona(fingerprint);
 
         // Log for debugging
         if (voiceMode) {
@@ -202,14 +202,14 @@ Write like someone who has genuinely been through something hard and come out sh
                 "Career": "Specific mistake or counterintuitive truth. Example: 'Getting promoted almost ended my career.'"
             };
 
-            const resolvedPostType    = postTypeBlueprints[postType] || postTypeBlueprints["Short"];
-            const resolvedTone        = toneModifiers[tone]          || toneModifiers["Professional"];
-            const resolvedHookExample = hookExamples[postType]       || hookExamples["Short"];
+            const resolvedPostType = postTypeBlueprints[postType] || postTypeBlueprints["Short"];
+            const resolvedTone = toneModifiers[tone] || toneModifiers["Professional"];
+            const resolvedHookExample = hookExamples[postType] || hookExamples["Short"];
 
-            const industry    = userSettings?.brandKit?.industry       || "Professional Growth";
-            const mission     = userSettings?.brandKit?.mission        || "Building authority and sharing expertise";
-            const audience    = userSettings?.brandKit?.targetAudience || "Professionals and practitioners";
-            const terminology = userSettings?.brandKit?.terminology    || "Industry-standard language";
+            const industry = userSettings?.brandKit?.industry || "Professional Growth";
+            const mission = userSettings?.brandKit?.mission || "Building authority and sharing expertise";
+            const audience = userSettings?.brandKit?.targetAudience || "Professionals and practitioners";
+            const terminology = userSettings?.brandKit?.terminology || "Industry-standard language";
 
             const negativePrompt = userSettings?.modelConfig?.negativePrompt
                 ? `\n---\n\n## ADDITIONAL AVOID RULES (User Defined)\n\nThe user has flagged the following. Never include these in any output:\n${userSettings.modelConfig.negativePrompt}`
@@ -559,7 +559,6 @@ ${negativePrompt}
 
 // @desc    Save post to library (unchanged)
 
-
 exports.savePost = async (req, res) => {
   try {
     const { prompt, content, postType, tone, messageId } = req.body;
@@ -573,9 +572,8 @@ exports.savePost = async (req, res) => {
       isSaved: true
     });
 
-    // 🔥 LINK POST TO MESSAGE
     if (messageId) {
-      await Conversation.updateOne(
+      const result = await Conversation.updateOne(
         { "messages._id": messageId },
         {
           $set: {
@@ -583,14 +581,16 @@ exports.savePost = async (req, res) => {
           }
         }
       );
+
+      console.log("POST LINK RESULT:", result);
     }
 
     res.status(201).json(newPost);
   } catch (error) {
+    console.error(error);
     res.status(500).json({ message: "Could not save post" });
   }
 };
-
 // @desc    Get all user posts (unchanged)
 exports.getPosts = async (req, res) => {
     try {
