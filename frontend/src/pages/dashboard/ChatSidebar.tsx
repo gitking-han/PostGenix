@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -61,7 +62,7 @@ interface ChatSidebarProps {
     voiceFingerprint?: any;
     fingerprintLoading: boolean;
     fingerprintFetching: boolean;
-    onGenerateFingerprint: () => void;
+    onGenerateFingerprint: (samples: string) => void; // receives raw pasted text
 }
 
 export function ChatSidebar({
@@ -81,6 +82,7 @@ export function ChatSidebar({
     const [idToDelete, setIdToDelete] = useState<string | null>(null);
     const [isOpen, setIsOpen] = useState(true);
     const [activeTab, setActiveTab] = useState<"history" | "profile" | "voice">("history");
+    const [sampleText, setSampleText] = useState(""); // user's own writing samples
 
     const formatDate = (dateStr: string) => {
         if (!dateStr) return "Just now";
@@ -303,78 +305,118 @@ export function ChatSidebar({
                                         Loading voice data...
                                     </div>
                                 ) : voiceFingerprint ? (
-                                    <div className="p-4 rounded-xl border border-accent/30 bg-accent/5 space-y-3">
-                                        <div className="flex items-center gap-2">
-                                            <div className="w-8 h-8 rounded-lg bg-accent/20 flex items-center justify-center">
-                                                <Mic2 className="w-4 h-4 text-accent" />
-                                            </div>
-                                            <div>
-                                                <p className="text-sm font-medium text-foreground">Voice Fingerprint Ready</p>
-                                                <p className="text-xs text-muted-foreground">
-                                                    {voiceFingerprint.postsAnalyzed || 0} posts analyzed
-                                                </p>
-                                            </div>
-                                        </div>
-
-                                        {/* Tone tags */}
-                                        {voiceFingerprint.tone && (
-                                            <div>
-                                                <p className="text-xs font-medium text-muted-foreground mb-2">Your Tone:</p>
-                                                <div className="flex flex-wrap gap-1.5">
-                                                    {voiceFingerprint.tone.map((t: string, i: number) => (
-                                                        <span
-                                                            key={i}
-                                                            className="text-[10px] font-medium px-2 py-1 rounded-full bg-accent/15 text-accent uppercase tracking-wide"
-                                                        >
-                                                            {t}
-                                                        </span>
-                                                    ))}
+                                    /* ── Has fingerprint: show summary + regenerate ── */
+                                    <div className="space-y-3">
+                                        <div className="p-4 rounded-xl border border-accent/30 bg-accent/5 space-y-3">
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-8 h-8 rounded-lg bg-accent/20 flex items-center justify-center">
+                                                    <Mic2 className="w-4 h-4 text-accent" />
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm font-medium text-foreground">Voice Fingerprint Ready</p>
+                                                    <p className="text-xs text-muted-foreground">
+                                                        {voiceFingerprint.postsAnalyzed || 0} samples analyzed
+                                                    </p>
                                                 </div>
                                             </div>
-                                        )}
 
-                                        {/* Summary */}
-                                        {voiceFingerprint.summary && (
-                                            <p className="text-xs text-muted-foreground leading-relaxed">
-                                                {voiceFingerprint.summary}
+                                            {voiceFingerprint.tone && (
+                                                <div>
+                                                    <p className="text-xs font-medium text-muted-foreground mb-2">Your Tone:</p>
+                                                    <div className="flex flex-wrap gap-1.5">
+                                                        {voiceFingerprint.tone.map((t: string, i: number) => (
+                                                            <span key={i} className="text-[10px] font-medium px-2 py-1 rounded-full bg-accent/15 text-accent uppercase tracking-wide">
+                                                                {t}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {voiceFingerprint.summary && (
+                                                <p className="text-xs text-muted-foreground leading-relaxed">
+                                                    {voiceFingerprint.summary}
+                                                </p>
+                                            )}
+                                        </div>
+
+                                        {/* Regenerate: paste new samples */}
+                                        <div className="space-y-2">
+                                            <p className="text-xs font-medium text-muted-foreground">
+                                                Paste new writing samples to regenerate:
                                             </p>
-                                        )}
+                                            <Textarea
+                                                placeholder={"Paste 3–5 LinkedIn posts you personally wrote (not AI-generated)...\n\nSeparate each post with a blank line."}
+                                                value={sampleText}
+                                                onChange={(e) => setSampleText(e.target.value)}
+                                                className="min-h-[120px] text-xs resize-none bg-background/50 focus-visible:ring-accent/20"
+                                            />
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                className="w-full text-xs"
+                                                onClick={() => onGenerateFingerprint(sampleText)}
+                                                disabled={fingerprintLoading || sampleText.trim().length < 50}
+                                            >
+                                                {fingerprintLoading ? "Regenerating..." : "Regenerate Fingerprint"}
+                                            </Button>
+                                            {sampleText.trim().length > 0 && sampleText.trim().length < 50 && (
+                                                <p className="text-[10px] text-amber-500 text-center">
+                                                    Paste more content for an accurate analysis
+                                                </p>
+                                            )}
+                                        </div>
+                                    </div>
+                                ) : (
+                                    /* ── No fingerprint: paste-to-generate flow ── */
+                                    <div className="space-y-3">
+                                        {/* Explanation */}
+                                        <div className="p-3 rounded-xl border border-amber-500/20 bg-amber-500/5">
+                                            <p className="text-xs font-semibold text-amber-500 mb-1">Why paste your own writing?</p>
+                                            <p className="text-xs text-muted-foreground leading-relaxed">
+                                                Posts generated here are written by AI in a generic voice. Pasting content
+                                                you personally wrote lets us learn <span className="text-foreground font-medium">your</span> actual style — not ours.
+                                            </p>
+                                        </div>
+
+                                        {/* Sample paste area */}
+                                        <div className="space-y-2">
+                                            <p className="text-xs font-medium text-foreground">
+                                                Paste 3–5 posts you wrote yourself:
+                                            </p>
+                                            <Textarea
+                                                placeholder={"Example — paste a real post you wrote:\n\nI spent 3 years building in silence. No updates, no posts, just work...\n\n--- (separate posts with a blank line) ---\n\nThe best career advice I ever got was to stop optimizing for salary..."}
+                                                value={sampleText}
+                                                onChange={(e) => setSampleText(e.target.value)}
+                                                className="min-h-[160px] text-xs resize-none bg-background/50 focus-visible:ring-accent/20"
+                                            />
+                                            <p className="text-[10px] text-muted-foreground">
+                                                LinkedIn posts, a bio, emails, anything you wrote — the more the better.
+                                                Separate multiple pieces with a blank line.
+                                            </p>
+                                        </div>
 
                                         <Button
                                             variant="outline"
                                             size="sm"
                                             className="w-full text-xs"
-                                            onClick={onGenerateFingerprint}
-                                            disabled={fingerprintLoading}
+                                            onClick={() => onGenerateFingerprint(sampleText)}
+                                            disabled={fingerprintLoading || sampleText.trim().length < 50}
                                         >
-                                            {fingerprintLoading ? "Regenerating..." : "Regenerate Fingerprint"}
+                                            {fingerprintLoading ? "Analyzing your voice..." : "Generate Fingerprint"}
                                         </Button>
-                                    </div>
-                                ) : (
-                                    <div className="p-6 rounded-xl border border-dashed border-border bg-muted/20 text-center space-y-3">
-                                        <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mx-auto">
-                                            <Mic2 className="w-6 h-6 text-muted-foreground" />
-                                        </div>
-                                        <div>
-                                            <p className="text-sm font-medium text-foreground">No Voice Fingerprint Yet</p>
-                                            {/* ─── BUG 4 FIXED ───────────────────────────────────────────
-                                                Changed "5 posts" → "3 posts" to match backend MIN_POSTS = 3.
-                                                Users with 3–4 posts were clicking Generate, getting a
-                                                confusing backend error, and thinking the feature was broken.
-                                            ──────────────────────────────────────────────────────────── */}
-                                            <p className="text-xs text-muted-foreground mt-1">
-                                                Write at least 3 posts to generate your unique voice profile
+
+                                        {sampleText.trim().length > 0 && sampleText.trim().length < 50 && (
+                                            <p className="text-[10px] text-amber-500 text-center">
+                                                Paste more content for an accurate analysis
                                             </p>
-                                        </div>
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            className="text-xs"
-                                            onClick={onGenerateFingerprint}
-                                            disabled={fingerprintLoading}
-                                        >
-                                            {fingerprintLoading ? "Generating..." : "Generate Fingerprint"}
-                                        </Button>
+                                        )}
+
+                                        {sampleText.trim().length === 0 && (
+                                            <p className="text-[10px] text-muted-foreground text-center">
+                                                Button activates once you paste your writing above
+                                            </p>
+                                        )}
                                     </div>
                                 )}
                             </div>

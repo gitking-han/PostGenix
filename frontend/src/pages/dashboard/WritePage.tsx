@@ -144,12 +144,13 @@ export default function WritePage() {
   };
 
   /* ── Generate Voice Fingerprint (POST) ──────────────────────────────────── */
-  const handleGenerateFingerprint = async () => {
+  const handleGenerateFingerprint = async (samples: string) => {
     setFingerprintLoading(true);
     try {
       const res  = await fetch(`${API_AI}/voice-fingerprint`, {
         method: "POST",
-        headers: authHeaders(),
+        headers: jsonHeaders(),
+        body: JSON.stringify({ samples }), // user's own writing — not AI-generated posts
       });
       const data = await res.json();
 
@@ -157,13 +158,13 @@ export default function WritePage() {
         setVoiceFingerprint(data.fingerprint);
         toast({
           title: "Voice Fingerprint Ready ✓",
-          description: `Analyzed ${data.fingerprint.postsAnalyzed} posts. Your voice is now mapped.`,
+          description: `Analyzed ${data.fingerprint.postsAnalyzed} samples. Your voice is now mapped.`,
         });
       } else {
         toast({
           variant: "destructive",
-          title: "Not enough posts",
-          description: data.message || "Write at least 3 posts to generate your fingerprint.",
+          title: "Not enough content",
+          description: data.message || "Paste more of your own writing and try again.",
         });
       }
     } catch (err) {
