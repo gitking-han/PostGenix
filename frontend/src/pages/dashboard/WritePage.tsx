@@ -25,7 +25,7 @@ type Message = {
   isSaved?: boolean;
   prompt?: string;
   lastLinkedinUrl?: string;
-  voiceModeUsed?: boolean; // NEW: did this post use voice mode?
+  voiceModeUsed?: boolean;
 };
 
 /* ─── Helpers ─────────────────────────────────────────────────────────────── */
@@ -56,8 +56,8 @@ export default function WritePage() {
   /* ── Voice Mode state ────────────────────────────────────────────────────── */
   const [voiceModeEnabled,     setVoiceModeEnabled]     = useState(false);
   const [voiceFingerprint,     setVoiceFingerprint]     = useState<any>(null);
-  const [fingerprintLoading,   setFingerprintLoading]   = useState(false); // generating fingerprint
-  const [fingerprintFetching,  setFingerprintFetching]  = useState(true);  // initial page load fetch
+  const [fingerprintLoading,   setFingerprintLoading]   = useState(false);
+  const [fingerprintFetching,  setFingerprintFetching]  = useState(true);
 
   const scrollRef  = useRef<HTMLDivElement>(null);
   const { toast }  = useToast();
@@ -83,13 +83,11 @@ export default function WritePage() {
           fetch(`${API_AI}/voice-fingerprint`,                        { headers: authHeaders() }),
         ]);
 
-        // LinkedIn status
         if (userRes.status === "fulfilled" && userRes.value.ok) {
           const data = await userRes.value.json();
           setIsLinkedInConnected(data.linkedin?.isConnected || false);
         }
 
-        // Voice fingerprint (cached — no AI call)
         if (fingerprintRes.status === "fulfilled" && fingerprintRes.value.ok) {
           const data = await fingerprintRes.value.json();
           if (data.fingerprint) {
@@ -124,6 +122,26 @@ export default function WritePage() {
       scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
     }
   }, [messages, isGenerating]);
+
+  /* ─── BUG 2 FIXED ───────────────────────────────────────────────────────────
+     Previously the mobile sidebar used `onVoiceModeToggle={setVoiceModeEnabled}`
+     — the raw setter with NO fingerprint guard. A mobile user with no fingerprint
+     could silently enable Voice Mode, the backend would log "no fingerprint —
+     falling back" and the UI would show a broken "Writing in your voice" state.
+
+     Fix: extract ONE guarded handler and share it between both sidebar instances.
+     The desktop sidebar was calling this inline; now both call the same function.
+  ──────────────────────────────────────────────────────────────────────────── */
+  const handleVoiceModeToggle = (val: boolean) => {
+    if (val && !voiceFingerprint) {
+      toast({
+        title: "No Voice Fingerprint Yet",
+        description: "Generate your fingerprint first in the Voice tab.",
+      });
+      return;
+    }
+    setVoiceModeEnabled(val);
+  };
 
   /* ── Generate Voice Fingerprint (POST) ──────────────────────────────────── */
   const handleGenerateFingerprint = async () => {
@@ -181,7 +199,7 @@ export default function WritePage() {
           postType,
           tone,
           history:   chatHistory,
-          voiceMode: voiceModeEnabled, // ← sent to backend
+          voiceMode: voiceModeEnabled,
         }),
       });
 
@@ -203,7 +221,7 @@ export default function WritePage() {
           tone:          data.tone,
           isSaved:       false,
           prompt:        currentInput,
-          voiceModeUsed: data.voiceModeUsed || false, // ← from backend response
+          voiceModeUsed: data.voiceModeUsed || false,
         }]);
         autoSaveInteraction(currentInput, data.content);
       } else {
@@ -371,16 +389,7 @@ export default function WritePage() {
             onDeleteChat={handleDeleteChat}
             onApplyBranding={handleApplyBranding}
             voiceModeEnabled={voiceModeEnabled}
-            onVoiceModeToggle={(val) => {
-              if (val && !voiceFingerprint) {
-                toast({
-                  title: "No Voice Fingerprint Yet",
-                  description: "Generate your fingerprint first in the Voice tab.",
-                });
-                return;
-              }
-              setVoiceModeEnabled(val);
-            }}
+            onVoiceModeToggle={handleVoiceModeToggle}
             voiceFingerprint={voiceFingerprint}
             fingerprintLoading={fingerprintLoading}
             fingerprintFetching={fingerprintFetching}
@@ -403,6 +412,14 @@ export default function WritePage() {
                 className="fixed right-0 top-0 bottom-0 w-[300px] bg-background z-[101] lg:hidden border-l shadow-2xl flex flex-col"
               >
                 <div className="flex-1 overflow-hidden">
+                  {/* ─── BUG 2 FIXED ────────────────────────────────────────────
+                      Was: onVoiceModeToggle={setVoiceModeEnabled}  ← raw setter,
+                           bypassed the fingerprint guard entirely on mobile.
+                      Now: onVoiceModeToggle={handleVoiceModeToggle} ← same guarded
+                           handler used by the desktop sidebar. Both platforms now
+                           show a toast and block the toggle when no fingerprint
+                           exists, instead of silently enabling broken Voice Mode.
+                  ──────────────────────────────────────────────────────────── */}
                   <ChatSidebar
                     chats={chats}
                     onSelectChat={(id) => { handleSelectChat(id); setIsHistoryOpen(false); }}
@@ -410,7 +427,7 @@ export default function WritePage() {
                     onDeleteChat={handleDeleteChat}
                     onApplyBranding={handleApplyBranding}
                     voiceModeEnabled={voiceModeEnabled}
-                    onVoiceModeToggle={setVoiceModeEnabled}
+                    onVoiceModeToggle={handleVoiceModeToggle}
                     voiceFingerprint={voiceFingerprint}
                     fingerprintLoading={fingerprintLoading}
                     fingerprintFetching={fingerprintFetching}
@@ -439,7 +456,6 @@ export default function WritePage() {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              {/* Voice mode active indicator in header */}
               {voiceModeEnabled && voiceFingerprint && (
                 <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-accent/10 border border-accent/20">
                   <Mic2 className="w-3 h-3 text-accent" />
@@ -531,7 +547,6 @@ export default function WritePage() {
                             <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-muted-foreground">
                               {msg.tone}
                             </span>
-                            {/* Voice mode badge on the message */}
                             {msg.voiceModeUsed && (
                               <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-accent/15 text-accent flex items-center gap-1">
                                 <Mic2 className="w-2.5 h-2.5" /> Your Voice
@@ -586,7 +601,6 @@ export default function WritePage() {
                                 <span>{msg.isSaved ? "Saved" : "Save"}</span>
                               </Button>
 
-                              {/* Post to LinkedIn */}
                               <Button
                                 variant="ghost" size="sm"
                                 disabled={isAgentActing !== null}
@@ -759,7 +773,7 @@ export default function WritePage() {
           </footer>
         </div>
 
-        {/* ── Premium limit modal (unchanged) ──────────────────────────────── */}
+        {/* ── Premium limit modal ───────────────────────────────────────────── */}
         <AnimatePresence>
           {isLimitReached && (
             <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">

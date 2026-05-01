@@ -110,7 +110,6 @@ export default function DashboardPage() {
   }, []);
 
   // ─── Fetch 2: analytics — runs in parallel, won't block core UI ─────────────
-  // Uses Promise.allSettled so one failing route doesn't kill the others
   useEffect(() => {
     const fetchAnalytics = async () => {
       setAnalyticsLoading(true);
@@ -251,8 +250,17 @@ export default function DashboardPage() {
           </Link>
         </div>
 
-        {/* ── Voice Fingerprint banner — shows only when fingerprint exists ── */}
-        {!!getUser?.voiceFingerprint && (
+        {/* ── Voice Fingerprint banner ─────────────────────────────────────
+            BUG 3 FIXED: Was `!!getUser?.voiceFingerprint` — this evaluated to
+            `true` for any user whose User document had the voiceFingerprint
+            subdocument initialized with Mongoose defaults (all null/empty),
+            even if they had never generated a fingerprint.
+
+            Fix: check `voiceFingerprint?.generatedAt` which is only set after
+            a successful POST /api/ai/voice-fingerprint call, making this banner
+            exclusively visible to users who actually have a real fingerprint.
+        ──────────────────────────────────────────────────────────────────── */}
+        {!!getUser?.voiceFingerprint?.generatedAt && (
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 p-4 rounded-xl border border-accent/30 bg-accent/5 mb-6">
             <div className="w-10 h-10 rounded-lg bg-accent/20 flex items-center justify-center shrink-0">
               <Mic2 className="w-5 h-5 text-accent" />
@@ -264,7 +272,7 @@ export default function DashboardPage() {
                   "Your tone and writing style have been mapped. Posts now generate in your voice."}
               </p>
             </div>
-            <Link to="/dashboard/voice" className="shrink-0">
+            <Link to="/dashboard/write" className="shrink-0">
               <Button variant="outline" size="sm">View Fingerprint</Button>
             </Link>
           </div>
@@ -426,7 +434,6 @@ export default function DashboardPage() {
               </div>
             ) : posts.length > 0 ? (
               posts.slice(0, 3).map((post) => {
-                // Per-post engagement rate — only for LinkedIn-published posts
                 const likes       = post.engagement?.likes       ?? 0;
                 const comments    = post.engagement?.comments    ?? 0;
                 const impressions = post.engagement?.impressions ?? 0;
@@ -455,14 +462,12 @@ export default function DashboardPage() {
                           })}
                         </p>
 
-                        {/* Post type badge */}
                         {post.postType && (
                           <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-accent/15 text-accent uppercase tracking-wide">
                             {post.postType}
                           </span>
                         )}
 
-                        {/* Engagement rate badge — only for published posts with data */}
                         {engRate !== null && (
                           <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full uppercase tracking-wide ${
                             engRate >= 3
@@ -473,7 +478,6 @@ export default function DashboardPage() {
                           </span>
                         )}
 
-                        {/* "On LinkedIn" badge for published posts without engagement yet */}
                         {post.linkedinPostId && engRate === null && (
                           <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-400 uppercase tracking-wide">
                             On LinkedIn

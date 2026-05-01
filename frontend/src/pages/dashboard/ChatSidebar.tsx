@@ -8,7 +8,7 @@ import {
     History,
     UserCircle,
     Sparkles,
-    Mic2, // Voice Mode icon
+    Mic2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,8 +16,12 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ProfileAnalyzer } from "./ProfileAnalyzer";
-import { Switch } from "@/components/ui/switch"; // You may need to add this component
-import { Enabled } from "@tanstack/react-query";
+import { Switch } from "@/components/ui/switch";
+
+// ─── BUG 1 FIXED ─────────────────────────────────────────────────────────────
+// Removed: import { Enabled } from "@tanstack/react-query";
+// `Enabled` is not a named export from that package — caused a build crash.
+// ─────────────────────────────────────────────────────────────────────────────
 
 /**
  * 1. CUSTOM DELETE MODAL
@@ -52,14 +56,12 @@ interface ChatSidebarProps {
     onDeleteChat: (id: string) => void;
     chats?: any[];
     onApplyBranding: (data: string) => void;
-    voiceModeEnabled: boolean;        // NEW: controlled by WritePage
-    onVoiceModeToggle: (enabled: boolean) => void; // NEW: callback to WritePage
-    voiceFingerprint?: any;           // NEW: user's voice fingerprint data from API
+    voiceModeEnabled: boolean;
+    onVoiceModeToggle: (enabled: boolean) => void;
+    voiceFingerprint?: any;
     fingerprintLoading: boolean;
     fingerprintFetching: boolean;
     onGenerateFingerprint: () => void;
-
-
 }
 
 export function ChatSidebar({
@@ -128,7 +130,7 @@ export function ChatSidebar({
                     onConfirm={() => { onDeleteChat(idToDelete); setIdToDelete(null); }}
                 />
 
-                {/* ── TAB BAR (3 tabs now) ──────────────────────────────────── */}
+                {/* ── TAB BAR ──────────────────────────────────────────────── */}
                 <div className="flex border-b border-border min-w-[320px]">
                     <button
                         onClick={() => setActiveTab("history")}
@@ -263,7 +265,7 @@ export function ChatSidebar({
                             </div>
                         </ScrollArea>
                     ) : (
-                        /* --- VOICE MODE TAB (UPDATED) --- */
+                        /* --- VOICE MODE TAB --- */
                         <ScrollArea className="flex-1 w-full">
                             <div className="p-4 space-y-4">
                                 <div className="flex items-center justify-between">
@@ -355,8 +357,13 @@ export function ChatSidebar({
                                         </div>
                                         <div>
                                             <p className="text-sm font-medium text-foreground">No Voice Fingerprint Yet</p>
+                                            {/* ─── BUG 4 FIXED ───────────────────────────────────────────
+                                                Changed "5 posts" → "3 posts" to match backend MIN_POSTS = 3.
+                                                Users with 3–4 posts were clicking Generate, getting a
+                                                confusing backend error, and thinking the feature was broken.
+                                            ──────────────────────────────────────────────────────────── */}
                                             <p className="text-xs text-muted-foreground mt-1">
-                                                Write at least 5 posts to generate your unique voice profile
+                                                Write at least 3 posts to generate your unique voice profile
                                             </p>
                                         </div>
                                         <Button
