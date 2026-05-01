@@ -17,6 +17,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ProfileAnalyzer } from "./ProfileAnalyzer";
 import { Switch } from "@/components/ui/switch"; // You may need to add this component
+import { Enabled } from "@tanstack/react-query";
 
 /**
  * 1. CUSTOM DELETE MODAL
@@ -54,6 +55,11 @@ interface ChatSidebarProps {
     voiceModeEnabled: boolean;        // NEW: controlled by WritePage
     onVoiceModeToggle: (enabled: boolean) => void; // NEW: callback to WritePage
     voiceFingerprint?: any;           // NEW: user's voice fingerprint data from API
+    fingerprintLoading: boolean;
+    fingerprintFetching: boolean;
+    onGenerateFingerprint: () => void;
+
+
 }
 
 export function ChatSidebar({
@@ -65,6 +71,9 @@ export function ChatSidebar({
     voiceModeEnabled,
     onVoiceModeToggle,
     voiceFingerprint,
+    fingerprintLoading,
+    fingerprintFetching,
+    onGenerateFingerprint,
 }: ChatSidebarProps) {
     const [searchQuery, setSearchQuery] = useState("");
     const [idToDelete, setIdToDelete] = useState<string | null>(null);
@@ -254,7 +263,7 @@ export function ChatSidebar({
                             </div>
                         </ScrollArea>
                     ) : (
-                        /* --- VOICE MODE TAB (NEW) --- */
+                        /* --- VOICE MODE TAB (UPDATED) --- */
                         <ScrollArea className="flex-1 w-full">
                             <div className="p-4 space-y-4">
                                 <div className="flex items-center justify-between">
@@ -287,7 +296,11 @@ export function ChatSidebar({
                                 </div>
 
                                 {/* Fingerprint Status */}
-                                {voiceFingerprint ? (
+                                {fingerprintFetching ? (
+                                    <div className="p-6 text-center text-xs text-muted-foreground">
+                                        Loading voice data...
+                                    </div>
+                                ) : voiceFingerprint ? (
                                     <div className="p-4 rounded-xl border border-accent/30 bg-accent/5 space-y-3">
                                         <div className="flex items-center gap-2">
                                             <div className="w-8 h-8 rounded-lg bg-accent/20 flex items-center justify-center">
@@ -329,16 +342,13 @@ export function ChatSidebar({
                                             variant="outline"
                                             size="sm"
                                             className="w-full text-xs"
-                                            onClick={() => {
-                                                // TODO: trigger fingerprint regeneration
-                                                // This will be wired when we build the backend route
-                                            }}
+                                            onClick={onGenerateFingerprint}
+                                            disabled={fingerprintLoading}
                                         >
-                                            Regenerate Fingerprint
+                                            {fingerprintLoading ? "Regenerating..." : "Regenerate Fingerprint"}
                                         </Button>
                                     </div>
                                 ) : (
-                                    /* No fingerprint yet */
                                     <div className="p-6 rounded-xl border border-dashed border-border bg-muted/20 text-center space-y-3">
                                         <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mx-auto">
                                             <Mic2 className="w-6 h-6 text-muted-foreground" />
@@ -353,9 +363,10 @@ export function ChatSidebar({
                                             variant="outline"
                                             size="sm"
                                             className="text-xs"
-                                            disabled
+                                            onClick={onGenerateFingerprint}
+                                            disabled={fingerprintLoading}
                                         >
-                                            Generate Fingerprint
+                                            {fingerprintLoading ? "Generating..." : "Generate Fingerprint"}
                                         </Button>
                                     </div>
                                 )}

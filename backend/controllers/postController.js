@@ -2,10 +2,8 @@ const Post = require("../models/Post");
 const Settings = require("../models/Settings");
 const { checkAndResetCredits } = require('../utils/creditManager');
 const User = require('../models/User');
-const Anthropic = require("@anthropic-ai/sdk");  // ✅ CHANGED: Replaced AWS SDK with Anthropic SDK
+const Anthropic = require("@anthropic-ai/sdk");
 
-
-// ✅ CHANGED: Replaced BedrockRuntimeClient with Anthropic client
 const anthropicClient = new Anthropic({
     apiKey: process.env.ANTHROPIC_API_KEY,
 });
@@ -14,7 +12,8 @@ const anthropicClient = new Anthropic({
 // @desc    Generate AI content using User Settings
 exports.generatePost = async (req, res) => {
     try {
-        const { prompt, postType, tone, history } = req.body;
+        // ── voiceMode added to destructuring ─────────────────────────────────
+        const { prompt, postType, tone, history, voiceMode } = req.body;
 
         // --- CREDIT & USER LOGIC (unchanged) ---
         let user = await User.findById(req.user.id);
@@ -37,7 +36,62 @@ exports.generatePost = async (req, res) => {
             };
         }
 
-        // ✅ IMPROVED: generateSystemInstruction — added new sections & tightened existing ones
+        // ── Build Voice Mode persona block ────────────────────────────────────
+        // Injected into the system prompt when voiceMode === true AND a
+        // fingerprint exists. If either is missing, generation falls back to
+        // standard mode — no errors thrown.
+        const buildVoicePersona = (fingerprint) => {
+            if (!fingerprint || !fingerprint.generatedAt) return "";
+
+            const tone      = fingerprint.tone?.join(", ")     || "Professional";
+            const patterns  = fingerprint.patterns?.join("\n- ") || "";
+            const strengths = fingerprint.strengths?.join(", ") || "";
+            const summary   = fingerprint.summary              || "";
+            const opening   = fingerprint.openingStyle         || "";
+
+            return `
+---
+
+## VOICE MODE — ACTIVE
+
+You are generating this post AS the user, not for the user.
+Abandon your default PostGenix voice. Adopt the voice profile below exactly.
+
+VOICE PROFILE (derived from the user's past posts):
+- Overall voice: ${summary}
+- Tone descriptors: ${tone}
+- Opening style: ${opening}
+- Writing patterns to mirror:
+  - ${patterns}
+- Content strengths to reinforce: ${strengths}
+
+VOICE MODE RULES:
+1. Write in first person as if the user wrote every word themselves.
+2. Mirror their sentence rhythm, their level of formality, their typical opening style.
+3. If their tone is casual — be casual. If it's authoritative — be authoritative.
+4. Do NOT blend in generic PostGenix defaults. This post must feel indistinguishable from their existing content.
+5. Still follow all POST BLUEPRINT and FORMAT RULES — but execute them through their voice, not a generic one.
+
+The output must feel like the user sat down and wrote their best post today.
+
+---
+`.trim();
+        };
+
+        // ── Resolve voice fingerprint if voiceMode is on ──────────────────────
+        const fingerprint   = voiceMode ? user.voiceFingerprint : null;
+        const voicePersona  = buildVoicePersona(fingerprint);
+
+        // Log for debugging
+        if (voiceMode) {
+            if (fingerprint?.generatedAt) {
+                console.log("LOG: Voice Mode ACTIVE for user:", req.user.id);
+            } else {
+                console.log("LOG: Voice Mode requested but no fingerprint found — falling back to standard.");
+            }
+        }
+
+        // ─────────────────────────────────────────────────────────────────────
         const generateSystemInstruction = (userSettings = {}, tone = "Professional", postType = "Short") => {
 
             // --- POST TYPE BLUEPRINTS ---
@@ -147,17 +201,15 @@ Write like someone who has genuinely been through something hard and come out sh
                 "Career": "Specific mistake or counterintuitive truth. Example: 'Getting promoted almost ended my career.'"
             };
 
-            // --- RESOLVE INPUTS WITH FALLBACKS ---
-            const resolvedPostType = postTypeBlueprints[postType] || postTypeBlueprints["Short"];
-            const resolvedTone = toneModifiers[tone] || toneModifiers["Professional"];
-            const resolvedHookExample = hookExamples[postType] || hookExamples["Short"];
+            const resolvedPostType    = postTypeBlueprints[postType] || postTypeBlueprints["Short"];
+            const resolvedTone        = toneModifiers[tone]          || toneModifiers["Professional"];
+            const resolvedHookExample = hookExamples[postType]       || hookExamples["Short"];
 
-            const industry = userSettings?.brandKit?.industry || "Professional Growth";
-            const mission = userSettings?.brandKit?.mission || "Building authority and sharing expertise";
-            const audience = userSettings?.brandKit?.targetAudience || "Professionals and practitioners";
-            const terminology = userSettings?.brandKit?.terminology || "Industry-standard language";
+            const industry    = userSettings?.brandKit?.industry       || "Professional Growth";
+            const mission     = userSettings?.brandKit?.mission        || "Building authority and sharing expertise";
+            const audience    = userSettings?.brandKit?.targetAudience || "Professionals and practitioners";
+            const terminology = userSettings?.brandKit?.terminology    || "Industry-standard language";
 
-            // ✅ IMPROVED: Added NEGATIVE PROMPT section so userSettings.modelConfig.negativePrompt is actually used
             const negativePrompt = userSettings?.modelConfig?.negativePrompt
                 ? `\n---\n\n## ADDITIONAL AVOID RULES (User Defined)\n\nThe user has flagged the following. Never include these in any output:\n${userSettings.modelConfig.negativePrompt}`
                 : "";
@@ -442,29 +494,32 @@ ${negativePrompt}
 `.trim();
         };
 
-        // --- USAGE ---
-        const systemInstruction = generateSystemInstruction(userSettings, tone, postType);
+        // --- BUILD SYSTEM INSTRUCTION ---
+        const baseInstruction = generateSystemInstruction(userSettings, tone, postType);
 
-        // ✅ CHANGED: Replaced Nova model selection with Claude models
-        // Haiku 4.5 for standard generation (fast + cheap), Sonnet 4.6 for high reasoning
+        // ── Inject voice persona AFTER the base system instruction ───────────
+        // Placed at the end so it overrides any default tone/voice guidelines above
+        const systemInstruction = voicePersona
+            ? `${baseInstruction}\n\n${voicePersona}`
+            : baseInstruction;
+
+        // --- MODEL SELECTION (unchanged) ---
         const modelId = userSettings.modelConfig.highReasoning
             ? "claude-sonnet-4-6"
             : "claude-haiku-4-5-20251001";
 
-        // ✅ CHANGED: Format history for Anthropic SDK
-        // Anthropic uses plain string content, not [{text: ...}] array like Bedrock
+        // --- HISTORY FORMATTING (unchanged) ---
         const formattedHistory = (history || []).map(msg => ({
             role: msg.role === "user" ? "user" : "assistant",
             content: msg.content || "",
         }));
 
-        // Add the current user prompt to history
         formattedHistory.push({
             role: "user",
             content: prompt
         });
 
-        // ✅ CHANGED: Replaced ConverseCommand + bedrockClient.send() with Anthropic messages.create()
+        // --- CLAUDE CALL (unchanged) ---
         const response = await anthropicClient.messages.create({
             model: modelId,
             max_tokens: 1000,
@@ -473,11 +528,9 @@ ${negativePrompt}
             temperature: userSettings.modelConfig.temperature || 0.7,
         });
 
-        // ✅ CHANGED: Extract text from Anthropic response format
-        // Anthropic: response.content[0].text  (vs Nova: response.output.message.content[0].text)
         const generatedText = response.content[0].text;
 
-        // --- POST-GENERATION LOGIC (unchanged) ---
+        // --- CREDIT DEDUCTION (unchanged) ---
         if (user.plan === 'free') {
             user.credits -= 1;
             await user.save();
@@ -488,7 +541,8 @@ ${negativePrompt}
             postType,
             tone,
             modelUsed: modelId,
-            remainingCredits: user.credits
+            remainingCredits: user.credits,
+            voiceModeUsed: !!voicePersona, // tells frontend if voice was actually applied
         });
 
     } catch (error) {
@@ -496,7 +550,7 @@ ${negativePrompt}
         res.status(500).json({
             message: "Generation failed",
             error: error.message,
-            errorType: error.constructor.name  // e.g. AuthenticationError, RateLimitError
+            errorType: error.constructor.name
         });
     }
 };

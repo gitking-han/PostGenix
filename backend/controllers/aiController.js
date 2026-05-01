@@ -137,16 +137,11 @@ exports.analyzeProfile = async (req, res) => {
 };
 
 /* ==========================================================
-   FEATURE 2: AUTO-DRAFT TO LINKEDIN (FIXED)
-
-   Changes from original:
-   - Now accepts `postId` in request body
-   - Saves linkedinPostId, linkedinUrl, publishedAt to Post document
-   - Returns postId back to frontend so it can track the post
+   FEATURE 2: AUTO-DRAFT TO LINKEDIN (unchanged)
    ========================================================== */
 exports.autoDraftToLinkedIn = async (req, res) => {
     try {
-        const { postContent, postId } = req.body; // ← postId added
+        const { postContent, postId } = req.body;
 
         const user = await User.findById(req.user.id);
 
@@ -173,7 +168,6 @@ exports.autoDraftToLinkedIn = async (req, res) => {
             const toolCall = response.content.find(c => c.type === "tool_use");
             const { commentary } = toolCall.input;
 
-            // ── Publish to LinkedIn ────────────────────────────────────────────
             const linkedinRes = await axios.post('https://api.linkedin.com/v2/posts', {
                 author: user.linkedin.personUrn,
                 commentary: commentary,
@@ -191,7 +185,6 @@ exports.autoDraftToLinkedIn = async (req, res) => {
                 }
             });
 
-            // ── Capture LinkedIn post ID ───────────────────────────────────────
             const linkedinId = linkedinRes.data.id
                 || linkedinRes.headers['x-restli-id']
                 || linkedinRes.headers['x-linkedin-id']
@@ -203,12 +196,10 @@ exports.autoDraftToLinkedIn = async (req, res) => {
 
             console.log("LOG: Captured LinkedIn ID:", linkedinId);
 
-            // ── Save to Post document (NEW) ────────────────────────────────────
-            // Only update if postId was passed and exists in DB
             if (postId) {
                 try {
                     await Post.findOneAndUpdate(
-                        { _id: postId, user: req.user.id }, // user check = security
+                        { _id: postId, user: req.user.id },
                         {
                             $set: {
                                 linkedinPostId: linkedinId,
@@ -219,7 +210,6 @@ exports.autoDraftToLinkedIn = async (req, res) => {
                     );
                     console.log("LOG: Saved linkedinPostId to Post:", postId);
                 } catch (dbErr) {
-                    // Don't fail the whole request if DB save fails
                     console.error("LOG: Failed to save linkedinPostId to Post:", dbErr.message);
                 }
             } else {
@@ -229,8 +219,8 @@ exports.autoDraftToLinkedIn = async (req, res) => {
             return res.status(200).json({
                 message: "Post successfully dispatched!",
                 linkedinUrl,
-                linkedinPostId: linkedinId, // ← also return it to frontend
-                postId,                     // ← echo back so frontend can update state
+                linkedinPostId: linkedinId,
+                postId,
             });
 
         } else {
@@ -245,3 +235,151 @@ exports.autoDraftToLinkedIn = async (req, res) => {
         });
     }
 };
+
+/* ==========================================================
+   FEATURE 3: GENERATE VOICE FINGERPRINT (NEW)
+
+   Reads user's last 20 posts, sends to Claude, returns a
+   structured voice profile. Cached on User document.
+   Re-generation allowed anytime via sidebar Regenerate button.
+
+   REQUIRES: voiceFingerprint field on User model (see notes)
+   ========================================================== */
+exports.generateVoiceFingerprint = async (req, res) => {
+    try {
+        // ── Fetch user's posts ────────────────────────────────────────────────
+        const posts = await Post.find({ user: req.user.id })
+            .sort({ createdAt: -1 })
+            .limit(20);
+
+        // Need at least 3 posts for a meaningful analysis
+        const MIN_POSTS = 3;
+        if (posts.length < MIN_POSTS) {
+            return res.status(400).json({
+                message: `You need at least ${MIN_POSTS} posts to generate a Voice Fingerprint. You currently have ${posts.length}.`,
+                postsCount: posts.length,
+                minRequired: MIN_POSTS,
+            });
+        }
+
+        // ── Build post samples string ─────────────────────────────────────────
+        const postSamples = posts
+            .map((p, i) => `--- Post ${i + 1} (${p.postType || "General"}, ${p.tone || "Professional"}) ---\n${p.content}`)
+            .join("\n\n");
+
+        // ── Claude prompt ─────────────────────────────────────────────────────
+        const fingerprintPrompt = `You are a professional writing analyst and LinkedIn brand strategist.
+
+Analyze the following ${posts.length} LinkedIn posts written by the same person and extract their unique writing voice and style.
+
+${postSamples}
+
+Based on these posts, respond ONLY with a valid JSON object — no markdown, no code blocks, no explanation outside the JSON:
+{
+  "tone": ["array of 3-5 single-word or short tone descriptors"],
+  "patterns": ["array of 2-4 specific writing patterns you observed"],
+  "strengths": ["array of 2-3 content strengths"],
+  "summary": "One sentence describing their overall voice in plain English",
+  "openingStyle": "How they typically open posts — one short descriptive phrase",
+  "postsAnalyzed": ${posts.length}
+}
+
+Example tone descriptors: Direct, Story-led, Data-driven, Conversational, Authoritative, Inspirational, Humorous, Educational
+Example patterns: "Starts with a bold claim", "Uses numbered lists", "Ends with a question to the reader", "Short punchy sentences"`;
+
+        // ── Call Claude ───────────────────────────────────────────────────────
+        const aiResponse = await anthropicClient.messages.create({
+            model: "claude-sonnet-4-6",
+            max_tokens: 600,
+            messages: [{
+                role: "user",
+                content: fingerprintPrompt
+            }]
+        });
+
+        const rawText = aiResponse.content
+            .filter(b => b.type === "text")
+            .map(b => b.text)
+            .join("");
+
+        // ── Parse JSON response ───────────────────────────────────────────────
+        let fingerprint;
+        try {
+            fingerprint = JSON.parse(rawText.replace(/```json|```/g, "").trim());
+        } catch (parseErr) {
+            console.error("Voice Fingerprint JSON parse error:", parseErr.message);
+            console.error("Raw AI output:", rawText);
+            return res.status(500).json({
+                message: "Failed to parse voice analysis. Please try again."
+            });
+        }
+
+        // ── Save to User document ─────────────────────────────────────────────
+        await User.findByIdAndUpdate(req.user.id, {
+            $set: {
+                voiceFingerprint: {
+                    ...fingerprint,
+                    generatedAt: new Date(),
+                }
+            }
+        });
+
+        console.log("LOG: Voice Fingerprint saved for user:", req.user.id);
+
+        res.status(200).json({
+            success: true,
+            fingerprint: {
+                ...fingerprint,
+                generatedAt: new Date(),
+            }
+        });
+
+    } catch (error) {
+        console.error("Voice Fingerprint Error:", error.message);
+        res.status(500).json({
+            message: "Failed to generate voice fingerprint",
+            error: error.message
+        });
+    }
+};
+
+/* ==========================================================
+   FEATURE 4: GET VOICE FINGERPRINT (NEW)
+
+   Returns the cached fingerprint from User document.
+   Called on Write page load to populate the Voice tab
+   without running the AI again.
+   ========================================================== */
+exports.getVoiceFingerprint = async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id).select("voiceFingerprint");
+
+        if (!user?.voiceFingerprint?.generatedAt) {
+            return res.json({ fingerprint: null });
+        }
+
+        res.json({ fingerprint: user.voiceFingerprint });
+
+    } catch (error) {
+        console.error("Get Voice Fingerprint Error:", error.message);
+        res.status(500).json({ message: "Failed to fetch voice fingerprint" });
+    }
+};
+
+/*
+═══════════════════════════════════════════════════════════════
+  ADD THIS TO YOUR User MODEL (models/User.js)
+═══════════════════════════════════════════════════════════════
+
+  voiceFingerprint: {
+    tone:          [String],
+    patterns:      [String],
+    strengths:     [String],
+    summary:       { type: String, default: null },
+    openingStyle:  { type: String, default: null },
+    postsAnalyzed: { type: Number, default: 0    },
+    generatedAt:   { type: Date,   default: null },
+  },
+
+═══════════════════════════════════════════════════════════════
+*/

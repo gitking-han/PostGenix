@@ -12,11 +12,11 @@ const UserSchema = new mongoose.Schema({
     enum: ['free', 'pro'],
     default: 'free'
   },
-  paddleCustomerId: { // Paddle's unique customer ID
+  paddleCustomerId: {
     type: String,
     default: null
   },
-  subscriptionId: { // The specific subscription ID
+  subscriptionId: {
     type: String,
     default: null
   },
@@ -29,21 +29,46 @@ const UserSchema = new mongoose.Schema({
     type: Date,
     default: null
   },
+
   linkedin: {
     accessToken: { type: String, default: null },
-    personUrn: { type: String, default: null }, // Critical for API calls
+    personUrn: { type: String, default: null },
     profileName: { type: String, default: null },
-    
     isConnected: { type: Boolean, default: false }
-},
+  },
 
-onboarding: {
-    showProfileGuide: { type: Boolean, default: true }, // Should the spotlight post appear?
-    hasCompletedProfile: { type: Boolean, default: false } // Did they finish the task?
-},
+  onboarding: {
+    showProfileGuide: { type: Boolean, default: true },
+    hasCompletedProfile: { type: Boolean, default: false }
+  },
+
+  // ── Voice Fingerprint (already existed) ────────────────────────────────────
+  voiceFingerprint: {
+    tone: [String],
+    patterns: [String],
+    strengths: [String],
+    summary: { type: String, default: null },
+    openingStyle: { type: String, default: null },
+    postsAnalyzed: { type: Number, default: 0 },
+    generatedAt: { type: Date, default: null },
+  },
+
+  // ── Brand Drift Cache (NEW) ────────────────────────────────────────────────
+  // Stores the last AI drift analysis result so we don't call Claude on every
+  // dashboard load. Refreshed automatically when cache is older than 24 hours.
+  brandDriftCache: {
+    driftDetected: { type: Boolean, default: false },
+    driftTopic: { type: String, default: null },
+    updatedAt: { type: Date, default: null },
+  },
+
   // CREDIT FIELDS
   credits: { type: Number, default: 10 },
-  lastCreditReset: { type: Date, default: Date.now }
+  lastCreditReset: { type: Date, default: Date.now },
+
+  // PASSWORD RESET FIELDS
+  resetPasswordToken: { type: String },
+  resetPasswordExpires: { type: Date },
 });
 
 const User = mongoose.model("user", UserSchema);
