@@ -26,7 +26,7 @@ type Message = {
   prompt?: string;
   lastLinkedinUrl?: string;
   voiceModeUsed?: boolean;
-  postId?: string; 
+  postId?: string;
 
 };
 
@@ -216,8 +216,11 @@ export default function WritePage() {
       }
 
       if (response.ok) {
+        // Use a stable temp id for the assistant message while we wait for DB
+        const aiTempId = "ai-" + Date.now();
+
         setMessages(prev => [...prev, {
-          id: "ai-" + Date.now(),
+          id: aiTempId,
           role: "assistant",
           content: data.content,
           postType: data.postType,
@@ -226,32 +229,73 @@ export default function WritePage() {
           prompt: currentInput,
           voiceModeUsed: data.voiceModeUsed || false,
         }]);
-        autoSaveInteraction(currentInput, data.content);
+
+        // ── Save to DB and get back the real MongoDB _id ──────────────────────
+        const realMessageId = await autoSaveInteraction(currentInput, data.content);
+
+        // ── Swap temp id → real _id so handleSavePost sends the correct id ────
+        if (realMessageId) {
+          setMessages(prev =>
+            prev.map(m =>
+              m.id === aiTempId
+                ? { ...m, id: realMessageId }
+                : m
+            )
+          );
+        }
+        // If realMessageId is null (autoSave failed), the temp id stays.
+        // handleSavePost will still work — it just won't link in Conversation.
+        // The post will still save to the Post collection correctly.
       } else {
         throw new Error(data.message || "Server Error");
       }
     } catch (err: any) {
-      toast({ variant: "destructive", title: "Error", description: err.message || "Generation failed." });
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: err.message || "Generation failed.",
+      });
     } finally {
       setIsGenerating(false);
     }
   };
-
   /* ── Auto-save interaction to chat history ───────────────────────────────── */
-  const autoSaveInteraction = async (userPrompt: string, aiContent: string) => {
+  const autoSaveInteraction = async (
+    userPrompt: string,
+    aiContent: string
+  ): Promise<string | null> => {                          // ← return type added
     try {
       const res = await fetch(`${API_CHAT}/save-interaction`, {
         method: "POST",
         headers: jsonHeaders(),
-        body: JSON.stringify({ chatId: currentChatId, userPrompt, aiResponse: aiContent, postType, tone }),
+        body: JSON.stringify({
+          chatId: currentChatId,
+          userPrompt,
+          aiResponse: aiContent,
+          postType,
+          tone,
+        }),
       });
       const data = await res.json();
+
       if (res.ok) {
         if (!currentChatId) setCurrentChatId(data._id);
         fetchHistory();
+
+        // ── NEW: find the assistant message _id in the returned conversation ──
+        // The backend pushes [userMsg, assistantMsg] so the last message is ours.
+        const savedMessages = data.messages || [];
+        const assistantMsg = [...savedMessages].reverse().find(
+          (m: any) => m.role === "assistant"
+        );
+
+        return assistantMsg?._id?.toString() || null;    // ← return real _id
       }
+
+      return null;
     } catch (err) {
       console.error("Auto-save failed", err);
+      return null;
     }
   };
 
@@ -287,59 +331,59 @@ export default function WritePage() {
 
   /* ── Post to LinkedIn ────────────────────────────────────────────────────── */
   const handleAutoDraft = async (
-  messageId: string,
-  postId: string,
-  content: string
-) => {
-  if (!isLinkedInConnected) {
-    return toast({
-      title: "LinkedIn Not Connected",
-      description: "Please connect LinkedIn first.",
-      variant: "destructive",
-    });
-  }
-
-  setIsAgentActing(messageId);
-
-  try {
-    const response = await fetch(`${API_AI}/auto-draft`, {
-      method: "POST",
-      headers: jsonHeaders(),
-      body: JSON.stringify({
-        postContent: content,
-        postId: postId,        // ✅ correct
-        messageId: messageId,  // ✅ correct
-      }),
-    });
-
-    const data = await response.json();
-
-    if (response.ok) {
-      setMessages(prev =>
-        prev.map(m =>
-          m.id === messageId
-            ? { ...m, lastLinkedinUrl: data.linkedinUrl }
-            : m
-        )
-      );
-
-      toast({
-        title: "Posted to LinkedIn 🚀",
-        description: "Your post is live.",
+    messageId: string,
+    postId: string,
+    content: string
+  ) => {
+    if (!isLinkedInConnected) {
+      return toast({
+        title: "LinkedIn Not Connected",
+        description: "Please connect LinkedIn first.",
+        variant: "destructive",
       });
-    } else {
-      throw new Error(data.message || "Agent failed.");
     }
-  } catch (err: any) {
-    toast({
-      variant: "destructive",
-      title: "Agent Error",
-      description: err.message || "Failed to post.",
-    });
-  } finally {
-    setIsAgentActing(null);
-  }
-};
+
+    setIsAgentActing(messageId);
+
+    try {
+      const response = await fetch(`${API_AI}/auto-draft`, {
+        method: "POST",
+        headers: jsonHeaders(),
+        body: JSON.stringify({
+          postContent: content,
+          postId: postId,        // ✅ correct
+          messageId: messageId,  // ✅ correct
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setMessages(prev =>
+          prev.map(m =>
+            m.id === messageId
+              ? { ...m, lastLinkedinUrl: data.linkedinUrl }
+              : m
+          )
+        );
+
+        toast({
+          title: "Posted to LinkedIn 🚀",
+          description: "Your post is live.",
+        });
+      } else {
+        throw new Error(data.message || "Agent failed.");
+      }
+    } catch (err: any) {
+      toast({
+        variant: "destructive",
+        title: "Agent Error",
+        description: err.message || "Failed to post.",
+      });
+    } finally {
+      setIsAgentActing(null);
+    }
+  };
   /* ── Copy ────────────────────────────────────────────────────────────────── */
   const handleCopy = (id: string, content: string) => {
     navigator.clipboard.writeText(content);
