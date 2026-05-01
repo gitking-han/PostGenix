@@ -3,6 +3,7 @@ const Settings = require("../models/Settings");
 const { checkAndResetCredits } = require('../utils/creditManager');
 const User = require('../models/User');
 const Anthropic = require("@anthropic-ai/sdk");
+const Conversation = require("../models/Conversation");
 
 const anthropicClient = new Anthropic({
     apiKey: process.env.ANTHROPIC_API_KEY,
@@ -557,21 +558,37 @@ ${negativePrompt}
 
 
 // @desc    Save post to library (unchanged)
+
+
 exports.savePost = async (req, res) => {
-    try {
-        const { prompt, content, postType, tone } = req.body;
-        const newPost = await Post.create({
-            user: req.user.id,
-            prompt,
-            content,
-            postType,
-            tone,
-            isSaved: true
-        });
-        res.status(201).json(newPost);
-    } catch (error) {
-        res.status(500).json({ message: "Could not save post" });
+  try {
+    const { prompt, content, postType, tone, messageId } = req.body;
+
+    const newPost = await Post.create({
+      user: req.user.id,
+      prompt,
+      content,
+      postType,
+      tone,
+      isSaved: true
+    });
+
+    // 🔥 LINK POST TO MESSAGE
+    if (messageId) {
+      await Conversation.updateOne(
+        { "messages._id": messageId },
+        {
+          $set: {
+            "messages.$.postId": newPost._id
+          }
+        }
+      );
     }
+
+    res.status(201).json(newPost);
+  } catch (error) {
+    res.status(500).json({ message: "Could not save post" });
+  }
 };
 
 // @desc    Get all user posts (unchanged)

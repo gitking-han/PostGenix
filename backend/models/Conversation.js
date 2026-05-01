@@ -1,5 +1,3 @@
-const mongoose = require('mongoose');
-
 const ConversationSchema = new mongoose.Schema({
   user: {
     type: mongoose.Schema.Types.ObjectId,
@@ -15,6 +13,19 @@ const ConversationSchema = new mongoose.Schema({
     {
       role: { type: String, enum: ['user', 'assistant'], required: true },
       content: { type: String, required: true },
+
+      
+      postId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Post",
+        default: null
+      },
+
+      lastLinkedinUrl: {
+        type: String,
+        default: null
+      },
+
       timestamp: { type: Date, default: Date.now }
     }
   ],
@@ -22,5 +33,3 @@ const ConversationSchema = new mongoose.Schema({
   postType: String,
   tone: String,
 }, { timestamps: true });
-
-module.exports = mongoose.model('Conversation', ConversationSchema);

@@ -139,9 +139,11 @@ exports.analyzeProfile = async (req, res) => {
 /* ==========================================================
    FEATURE 2: AUTO-DRAFT TO LINKEDIN (unchanged)
    ========================================================== */
+const Conversation = require('../models/Conversation');
+
 exports.autoDraftToLinkedIn = async (req, res) => {
     try {
-        const { postContent, postId } = req.body;
+        const { postContent, postId, messageId } = req.body;
 
         const user = await User.findById(req.user.id);
 
@@ -152,6 +154,7 @@ exports.autoDraftToLinkedIn = async (req, res) => {
             });
         }
 
+        // ── Ask Claude to format post ───────────────────────────────
         const response = await anthropicClient.messages.create({
             model: "claude-sonnet-4-6",
             max_tokens: 1000,
@@ -164,11 +167,19 @@ exports.autoDraftToLinkedIn = async (req, res) => {
 
         const stopReason = response.stop_reason;
 
-        if (stopReason === "tool_use") {
-            const toolCall = response.content.find(c => c.type === "tool_use");
-            const { commentary } = toolCall.input;
+        if (stopReason !== "tool_use") {
+            return res.status(500).json({
+                message: "Agent decided not to use the tool. Try again."
+            });
+        }
 
-            const linkedinRes = await axios.post('https://api.linkedin.com/v2/posts', {
+        const toolCall = response.content.find(c => c.type === "tool_use");
+        const { commentary } = toolCall.input;
+
+        // ── Send to LinkedIn ───────────────────────────────────────
+        const linkedinRes = await axios.post(
+            'https://api.linkedin.com/v2/posts',
+            {
                 author: user.linkedin.personUrn,
                 commentary: commentary,
                 visibility: "PUBLIC",
@@ -177,58 +188,88 @@ exports.autoDraftToLinkedIn = async (req, res) => {
                     targetEntities: []
                 },
                 lifecycleState: "PUBLISHED"
-            }, {
+            },
+            {
                 headers: {
                     'Authorization': `Bearer ${user.linkedin.accessToken}`,
                     'X-Restli-Protocol-Version': '2.0.0',
                     'Content-Type': 'application/json'
                 }
-            });
-
-            const linkedinId = linkedinRes.data.id
-                || linkedinRes.headers['x-restli-id']
-                || linkedinRes.headers['x-linkedin-id']
-                || null;
-
-            const linkedinUrl = linkedinId
-                ? `https://www.linkedin.com/feed/update/${linkedinId}/`
-                : "";
-
-            console.log("LOG: Captured LinkedIn ID:", linkedinId);
-
-            if (postId) {
-                try {
-                    await Post.findOneAndUpdate(
-                        { _id: postId, user: req.user.id },
-                        {
-                            $set: {
-                                linkedinPostId: linkedinId,
-                                linkedinUrl:    linkedinUrl,
-                                publishedAt:    new Date(),
-                            }
-                        }
-                    );
-                    console.log("LOG: Saved linkedinPostId to Post:", postId);
-                } catch (dbErr) {
-                    console.error("LOG: Failed to save linkedinPostId to Post:", dbErr.message);
-                }
-            } else {
-                console.warn("LOG: No postId sent — linkedinPostId not saved to DB.");
             }
+        );
 
-            return res.status(200).json({
-                message: "Post successfully dispatched!",
-                linkedinUrl,
-                linkedinPostId: linkedinId,
-                postId,
-            });
+        const linkedinId =
+            linkedinRes.data.id ||
+            linkedinRes.headers['x-restli-id'] ||
+            linkedinRes.headers['x-linkedin-id'] ||
+            null;
 
-        } else {
-            return res.status(500).json({ message: "Agent decided not to use the tool. Try again." });
+        const linkedinUrl = linkedinId
+            ? `https://www.linkedin.com/feed/update/${linkedinId}/`
+            : "";
+
+        console.log("LOG: LinkedIn ID:", linkedinId);
+
+        // ───────────────────────────────────────────────────────────
+        // ✅ 1. UPDATE POST COLLECTION
+        // ───────────────────────────────────────────────────────────
+        if (postId) {
+            try {
+                await Post.findOneAndUpdate(
+                    { _id: postId, user: req.user.id },
+                    {
+                        $set: {
+                            linkedinPostId: linkedinId,
+                            linkedinUrl: linkedinUrl,
+                            publishedAt: new Date(),
+                        }
+                    }
+                );
+                console.log("LOG: Post updated:", postId);
+            } catch (err) {
+                console.error("LOG: Failed updating Post:", err.message);
+            }
         }
+
+        // ───────────────────────────────────────────────────────────
+        // ✅ 2. UPDATE CONVERSATION MESSAGE (🔥 CRITICAL FIX)
+        // ───────────────────────────────────────────────────────────
+        if (messageId) {
+            try {
+                await Conversation.updateOne(
+                    { "messages._id": messageId },
+                    {
+                        $set: {
+                            "messages.$.lastLinkedinUrl": linkedinUrl,
+
+                            // optional but VERY useful
+                            ...(postId && {
+                                "messages.$.postId": postId
+                            })
+                        }
+                    }
+                );
+
+                console.log("LOG: Conversation message updated:", messageId);
+            } catch (err) {
+                console.error("LOG: Failed updating Conversation:", err.message);
+            }
+        } else {
+            console.warn("LOG: No messageId provided — chat not updated.");
+        }
+
+        // ── Final response ──────────────────────────────────────────
+        return res.status(200).json({
+            message: "Post successfully dispatched!",
+            linkedinUrl,
+            linkedinPostId: linkedinId,
+            postId,
+            messageId
+        });
 
     } catch (error) {
         console.error("LinkedIn Agent Error:", error.response?.data || error.message);
+
         res.status(500).json({
             message: "Failed to post to LinkedIn",
             error: error.response?.data?.message || error.message

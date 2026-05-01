@@ -14,7 +14,7 @@ import { ChatSidebar } from "./ChatSidebar";
 
 /* ─── Config & Types ─────────────────────────────────────────────────────── */
 const postTypes = ["Short", "Story", "List", "Hot Take", "Career"];
-const tones     = ["Professional", "Casual", "Authority", "Inspirational"];
+const tones = ["Professional", "Casual", "Authority", "Inspirational"];
 
 type Message = {
   id: string;
@@ -26,6 +26,8 @@ type Message = {
   prompt?: string;
   lastLinkedinUrl?: string;
   voiceModeUsed?: boolean;
+  postId?: string; 
+
 };
 
 /* ─── Helpers ─────────────────────────────────────────────────────────────── */
@@ -39,32 +41,32 @@ const jsonHeaders = () => ({
 
 export default function WritePage() {
   /* ── Core state ──────────────────────────────────────────────────────────── */
-  const [input,            setInput]            = useState("");
-  const [messages,         setMessages]         = useState<Message[]>([]);
-  const [postType,         setPostType]         = useState("Short");
-  const [tone,             setTone]             = useState("Professional");
-  const [isGenerating,     setIsGenerating]     = useState(false);
-  const [copiedId,         setCopiedId]         = useState<string | null>(null);
-  const [isHistoryOpen,    setIsHistoryOpen]    = useState(false);
-  const [isMobile,         setIsMobile]         = useState(false);
-  const [chats,            setChats]            = useState<any[]>([]);
-  const [currentChatId,    setCurrentChatId]    = useState<string | null>(null);
-  const [isLimitReached,   setIsLimitReached]   = useState(false);
+  const [input, setInput] = useState("");
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [postType, setPostType] = useState("Short");
+  const [tone, setTone] = useState("Professional");
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [chats, setChats] = useState<any[]>([]);
+  const [currentChatId, setCurrentChatId] = useState<string | null>(null);
+  const [isLimitReached, setIsLimitReached] = useState(false);
   const [isLinkedInConnected, setIsLinkedInConnected] = useState(false);
-  const [isAgentActing,    setIsAgentActing]    = useState<string | null>(null);
+  const [isAgentActing, setIsAgentActing] = useState<string | null>(null);
 
   /* ── Voice Mode state ────────────────────────────────────────────────────── */
-  const [voiceModeEnabled,     setVoiceModeEnabled]     = useState(false);
-  const [voiceFingerprint,     setVoiceFingerprint]     = useState<any>(null);
-  const [fingerprintLoading,   setFingerprintLoading]   = useState(false);
-  const [fingerprintFetching,  setFingerprintFetching]  = useState(true);
+  const [voiceModeEnabled, setVoiceModeEnabled] = useState(false);
+  const [voiceFingerprint, setVoiceFingerprint] = useState<any>(null);
+  const [fingerprintLoading, setFingerprintLoading] = useState(false);
+  const [fingerprintFetching, setFingerprintFetching] = useState(true);
 
-  const scrollRef  = useRef<HTMLDivElement>(null);
-  const { toast }  = useToast();
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
 
   const API_BASE = `${import.meta.env.VITE_API_URL}/api/posts`;
   const API_CHAT = `${import.meta.env.VITE_API_URL}/api/chats`;
-  const API_AI   = `${import.meta.env.VITE_API_URL}/api/ai`;
+  const API_AI = `${import.meta.env.VITE_API_URL}/api/ai`;
 
   /* ── Mobile detection ────────────────────────────────────────────────────── */
   useEffect(() => {
@@ -80,7 +82,7 @@ export default function WritePage() {
       try {
         const [userRes, fingerprintRes] = await Promise.allSettled([
           fetch(`${import.meta.env.VITE_API_URL}/api/auth/get-user`, { headers: authHeaders() }),
-          fetch(`${API_AI}/voice-fingerprint`,                        { headers: authHeaders() }),
+          fetch(`${API_AI}/voice-fingerprint`, { headers: authHeaders() }),
         ]);
 
         if (userRes.status === "fulfilled" && userRes.value.ok) {
@@ -106,7 +108,7 @@ export default function WritePage() {
   /* ── Fetch chat history ──────────────────────────────────────────────────── */
   const fetchHistory = async () => {
     try {
-      const res  = await fetch(`${API_CHAT}/history`, { headers: authHeaders() });
+      const res = await fetch(`${API_CHAT}/history`, { headers: authHeaders() });
       const data = await res.json();
       if (res.ok) setChats(data);
     } catch (err) {
@@ -147,7 +149,7 @@ export default function WritePage() {
   const handleGenerateFingerprint = async (samples: string) => {
     setFingerprintLoading(true);
     try {
-      const res  = await fetch(`${API_AI}/voice-fingerprint`, {
+      const res = await fetch(`${API_AI}/voice-fingerprint`, {
         method: "POST",
         headers: jsonHeaders(),
         body: JSON.stringify({ samples }), // user's own writing — not AI-generated posts
@@ -179,11 +181,11 @@ export default function WritePage() {
     if (!input.trim() || isGenerating) return;
 
     const currentInput = input;
-    const tempId       = Date.now().toString();
+    const tempId = Date.now().toString();
     const userMessage: Message = { id: tempId, role: "user", content: currentInput };
 
     const chatHistory = messages.map(m => ({
-      role:    m.role === "assistant" ? "assistant" : "user",
+      role: m.role === "assistant" ? "assistant" : "user",
       content: m.content,
     }));
 
@@ -196,10 +198,10 @@ export default function WritePage() {
         method: "POST",
         headers: jsonHeaders(),
         body: JSON.stringify({
-          prompt:    currentInput,
+          prompt: currentInput,
           postType,
           tone,
-          history:   chatHistory,
+          history: chatHistory,
           voiceMode: voiceModeEnabled,
         }),
       });
@@ -215,13 +217,13 @@ export default function WritePage() {
 
       if (response.ok) {
         setMessages(prev => [...prev, {
-          id:            "ai-" + Date.now(),
-          role:          "assistant",
-          content:       data.content,
-          postType:      data.postType,
-          tone:          data.tone,
-          isSaved:       false,
-          prompt:        currentInput,
+          id: "ai-" + Date.now(),
+          role: "assistant",
+          content: data.content,
+          postType: data.postType,
+          tone: data.tone,
+          isSaved: false,
+          prompt: currentInput,
           voiceModeUsed: data.voiceModeUsed || false,
         }]);
         autoSaveInteraction(currentInput, data.content);
@@ -238,7 +240,7 @@ export default function WritePage() {
   /* ── Auto-save interaction to chat history ───────────────────────────────── */
   const autoSaveInteraction = async (userPrompt: string, aiContent: string) => {
     try {
-      const res  = await fetch(`${API_CHAT}/save-interaction`, {
+      const res = await fetch(`${API_CHAT}/save-interaction`, {
         method: "POST",
         headers: jsonHeaders(),
         body: JSON.stringify({ chatId: currentChatId, userPrompt, aiResponse: aiContent, postType, tone }),
@@ -261,16 +263,20 @@ export default function WritePage() {
         method: "POST",
         headers: jsonHeaders(),
         body: JSON.stringify({
-          prompt:   msg.prompt || "LinkedIn Post",
-          content:  msg.content,
+          prompt: msg.prompt || "LinkedIn Post",
+          content: msg.content,
           postType: msg.postType,
-          tone:     msg.tone,
+          tone: msg.tone,
+          messageId: msg.id,
         }),
       });
       const savedData = await response.json();
       if (response.ok) {
         setMessages(prev =>
-          prev.map(m => m.id === msg.id ? { ...m, isSaved: true, id: savedData._id } : m)
+          prev.map(m => m.id === msg.id
+            ? { ...m, isSaved: true, postId: savedData._id }
+            : m
+          )
         );
         toast({ title: "Saved to Library", description: "This post is now stored in your library." });
       }
@@ -280,37 +286,60 @@ export default function WritePage() {
   };
 
   /* ── Post to LinkedIn ────────────────────────────────────────────────────── */
-  const handleAutoDraft = async (messageId: string, content: string) => {
-    if (!isLinkedInConnected) {
-      return toast({
-        title: "LinkedIn Not Connected",
-        description: "Please go to Settings and connect your LinkedIn account first.",
-        variant: "destructive",
-      });
-    }
-    setIsAgentActing(messageId);
-    try {
-      const response = await fetch(`${API_AI}/auto-draft`, {
-        method: "POST",
-        headers: jsonHeaders(),
-        body: JSON.stringify({ postContent: content, postId: messageId }),
-      });
-      const data = await response.json();
-      if (response.ok) {
-        setMessages(prev => prev.map(m =>
-          m.id === messageId ? { ...m, lastLinkedinUrl: data.linkedinUrl } : m
-        ));
-        toast({ title: "Posted to LinkedIn! 🚀", description: "Your post has been dispatched successfully." });
-      } else {
-        throw new Error(data.message || "Agent failed.");
-      }
-    } catch (err: any) {
-      toast({ variant: "destructive", title: "Agent Error", description: err.message || "Failed to post." });
-    } finally {
-      setIsAgentActing(null);
-    }
-  };
+  const handleAutoDraft = async (
+  messageId: string,
+  postId: string,
+  content: string
+) => {
+  if (!isLinkedInConnected) {
+    return toast({
+      title: "LinkedIn Not Connected",
+      description: "Please connect LinkedIn first.",
+      variant: "destructive",
+    });
+  }
 
+  setIsAgentActing(messageId);
+
+  try {
+    const response = await fetch(`${API_AI}/auto-draft`, {
+      method: "POST",
+      headers: jsonHeaders(),
+      body: JSON.stringify({
+        postContent: content,
+        postId: postId,        // ✅ correct
+        messageId: messageId,  // ✅ correct
+      }),
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      setMessages(prev =>
+        prev.map(m =>
+          m.id === messageId
+            ? { ...m, lastLinkedinUrl: data.linkedinUrl }
+            : m
+        )
+      );
+
+      toast({
+        title: "Posted to LinkedIn 🚀",
+        description: "Your post is live.",
+      });
+    } else {
+      throw new Error(data.message || "Agent failed.");
+    }
+  } catch (err: any) {
+    toast({
+      variant: "destructive",
+      title: "Agent Error",
+      description: err.message || "Failed to post.",
+    });
+  } finally {
+    setIsAgentActing(null);
+  }
+};
   /* ── Copy ────────────────────────────────────────────────────────────────── */
   const handleCopy = (id: string, content: string) => {
     navigator.clipboard.writeText(content);
@@ -324,18 +353,20 @@ export default function WritePage() {
 
   const handleSelectChat = async (id: string) => {
     try {
-      const res  = await fetch(`${API_CHAT}/${id}`, { headers: authHeaders() });
+      const res = await fetch(`${API_CHAT}/${id}`, { headers: authHeaders() });
       const data = await res.json();
       if (res.ok) {
         setCurrentChatId(data._id);
         const mapped = data.messages.map((m: any, index: number) => ({
-          id:             m._id,
-          role:           m.role,
-          content:        m.content,
-          postType:       data.postType,
-          tone:           data.tone,
-          prompt:         m.role === "assistant" ? (data.messages[index - 1]?.content || "") : "",
+          id: m._id,
+          role: m.role,
+          content: m.content,
+          postType: data.postType,
+          tone: data.tone,
+          prompt: m.role === "assistant" ? (data.messages[index - 1]?.content || "") : "",
           lastLinkedinUrl: m.lastLinkedinUrl,
+          isSaved: !!m.postId
+
         }));
         setMessages(mapped);
         setPostType(data.postType);
@@ -613,14 +644,14 @@ export default function WritePage() {
                                     : "text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 border border-dashed border-amber-200"
                                 )}
                                 onClick={() => {
-                                  if (!msg.isSaved) {
+                                  if (!msg.postId) {
                                     return toast({
                                       title: "Save Required",
                                       description: "Please save this post before posting to LinkedIn.",
                                     });
                                   }
                                   if (isLinkedInConnected) {
-                                    handleAutoDraft(msg.id, msg.content);
+                                    handleAutoDraft(msg.id, msg.postId!, msg.content);
                                   } else {
                                     handleConnectLinkedIn();
                                   }
