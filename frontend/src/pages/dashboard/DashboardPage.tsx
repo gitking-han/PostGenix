@@ -285,7 +285,7 @@ export default function DashboardPage() {
             </div>
 
             {/* Added pr-8 on mobile/desktop to ensure text/button never overlap the X */}
-            <div className="flex-1 min-w-0 pr-8 pt-3 sm:pr-0">
+            <div className="flex-1 min-w-0 pr-8 pt-1.5 sm:pr-0">
               <p className="font-medium text-foreground text-sm">Your Voice Fingerprint is ready</p>
               <p className="text-xs text-muted-foreground mt-0.5">
                 {getUser.voiceFingerprint?.summary ||
@@ -293,7 +293,7 @@ export default function DashboardPage() {
               </p>
             </div>
 
-            <Link to="/dashboard/write" className="shrink-0 pt-3">
+            <Link to="/dashboard/write" className="shrink-0 pt-1.5">
               <Button variant="outline" size="sm">
                 Compose with Authority
               </Button>
