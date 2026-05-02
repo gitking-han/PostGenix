@@ -14,7 +14,7 @@ import { ChatSidebar } from "./ChatSidebar";
 
 /* ─── Config & Types ─────────────────────────────────────────────────────── */
 const postTypes = ["Short", "Story", "List", "Hot Take", "Career"];
-const tones = ["Professional", "Casual", "Authority", "Inspirational"];
+const tones     = ["Professional", "Casual", "Authority", "Inspirational"];
 
 type Message = {
   id: string;
@@ -23,11 +23,10 @@ type Message = {
   postType?: string;
   tone?: string;
   isSaved?: boolean;
+  postId?: string;           // real MongoDB Post._id — needed for LinkedIn button
   prompt?: string;
   lastLinkedinUrl?: string;
   voiceModeUsed?: boolean;
-  postId?: string;
-
 };
 
 /* ─── Helpers ─────────────────────────────────────────────────────────────── */
@@ -40,25 +39,26 @@ const jsonHeaders = () => ({
 });
 
 export default function WritePage() {
-  /* ── Core state ──────────────────────────────────────────────────────────── */
-  const [input, setInput] = useState("");
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [postType, setPostType] = useState("Short");
-  const [tone, setTone] = useState("Professional");
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
-  const [chats, setChats] = useState<any[]>([]);
-  const [currentChatId, setCurrentChatId] = useState<string | null>(null);
-  const [isLimitReached, setIsLimitReached] = useState(false);
-  const [isLinkedInConnected, setIsLinkedInConnected] = useState(false);
-  const [isAgentActing, setIsAgentActing] = useState<string | null>(null);
 
-  /* ── Voice Mode state ────────────────────────────────────────────────────── */
-  const [voiceModeEnabled, setVoiceModeEnabled] = useState(false);
-  const [voiceFingerprint, setVoiceFingerprint] = useState<any>(null);
-  const [fingerprintLoading, setFingerprintLoading] = useState(false);
+  /* ── Core state ─────────────────────────────────────────────────────────── */
+  const [input,            setInput]            = useState("");
+  const [messages,         setMessages]         = useState<Message[]>([]);
+  const [postType,         setPostType]         = useState("Short");
+  const [tone,             setTone]             = useState("Professional");
+  const [isGenerating,     setIsGenerating]     = useState(false);
+  const [copiedId,         setCopiedId]         = useState<string | null>(null);
+  const [isHistoryOpen,    setIsHistoryOpen]    = useState(false);
+  const [isMobile,         setIsMobile]         = useState(false);
+  const [chats,            setChats]            = useState<any[]>([]);
+  const [currentChatId,    setCurrentChatId]    = useState<string | null>(null);
+  const [isLimitReached,   setIsLimitReached]   = useState(false);
+  const [isLinkedInConnected, setIsLinkedInConnected] = useState(false);
+  const [isAgentActing,    setIsAgentActing]    = useState<string | null>(null);
+
+  /* ── Voice Mode state ───────────────────────────────────────────────────── */
+  const [voiceModeEnabled,    setVoiceModeEnabled]    = useState(false);
+  const [voiceFingerprint,    setVoiceFingerprint]    = useState<any>(null);
+  const [fingerprintLoading,  setFingerprintLoading]  = useState(false);
   const [fingerprintFetching, setFingerprintFetching] = useState(true);
 
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -66,9 +66,9 @@ export default function WritePage() {
 
   const API_BASE = `${import.meta.env.VITE_API_URL}/api/posts`;
   const API_CHAT = `${import.meta.env.VITE_API_URL}/api/chats`;
-  const API_AI = `${import.meta.env.VITE_API_URL}/api/ai`;
+  const API_AI   = `${import.meta.env.VITE_API_URL}/api/ai`;
 
-  /* ── Mobile detection ────────────────────────────────────────────────────── */
+  /* ── Mobile detection ───────────────────────────────────────────────────── */
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 1024);
     check();
@@ -76,25 +76,21 @@ export default function WritePage() {
     return () => window.removeEventListener("resize", check);
   }, []);
 
-  /* ── On mount: fetch LinkedIn status + voice fingerprint in parallel ─────── */
+  /* ── On mount: fetch user + fingerprint in parallel ────────────────────── */
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
-        const [userRes, fingerprintRes] = await Promise.allSettled([
+        const [userRes, fpRes] = await Promise.allSettled([
           fetch(`${import.meta.env.VITE_API_URL}/api/auth/get-user`, { headers: authHeaders() }),
-          fetch(`${API_AI}/voice-fingerprint`, { headers: authHeaders() }),
+          fetch(`${API_AI}/voice-fingerprint`,                        { headers: authHeaders() }),
         ]);
-
         if (userRes.status === "fulfilled" && userRes.value.ok) {
-          const data = await userRes.value.json();
-          setIsLinkedInConnected(data.linkedin?.isConnected || false);
+          const d = await userRes.value.json();
+          setIsLinkedInConnected(d.linkedin?.isConnected || false);
         }
-
-        if (fingerprintRes.status === "fulfilled" && fingerprintRes.value.ok) {
-          const data = await fingerprintRes.value.json();
-          if (data.fingerprint) {
-            setVoiceFingerprint(data.fingerprint);
-          }
+        if (fpRes.status === "fulfilled" && fpRes.value.ok) {
+          const d = await fpRes.value.json();
+          if (d.fingerprint) setVoiceFingerprint(d.fingerprint);
         }
       } catch (err) {
         console.error("Failed to fetch initial data", err);
@@ -105,35 +101,26 @@ export default function WritePage() {
     fetchInitialData();
   }, []);
 
-  /* ── Fetch chat history ──────────────────────────────────────────────────── */
+  /* ── Fetch chat history ─────────────────────────────────────────────────── */
   const fetchHistory = async () => {
     try {
-      const res = await fetch(`${API_CHAT}/history`, { headers: authHeaders() });
+      const res  = await fetch(`${API_CHAT}/history`, { headers: authHeaders() });
       const data = await res.json();
       if (res.ok) setChats(data);
     } catch (err) {
       console.error("Failed to fetch history", err);
     }
   };
-
   useEffect(() => { fetchHistory(); }, []);
 
-  /* ── Auto-scroll ─────────────────────────────────────────────────────────── */
+  /* ── Auto-scroll ────────────────────────────────────────────────────────── */
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
     }
   }, [messages, isGenerating]);
 
-  /* ─── BUG 2 FIXED ───────────────────────────────────────────────────────────
-     Previously the mobile sidebar used `onVoiceModeToggle={setVoiceModeEnabled}`
-     — the raw setter with NO fingerprint guard. A mobile user with no fingerprint
-     could silently enable Voice Mode, the backend would log "no fingerprint —
-     falling back" and the UI would show a broken "Writing in your voice" state.
-
-     Fix: extract ONE guarded handler and share it between both sidebar instances.
-     The desktop sidebar was calling this inline; now both call the same function.
-  ──────────────────────────────────────────────────────────────────────────── */
+  /* ── Guarded voice mode toggle (shared by both sidebar instances) ────────── */
   const handleVoiceModeToggle = (val: boolean) => {
     if (val && !voiceFingerprint) {
       toast({
@@ -145,17 +132,16 @@ export default function WritePage() {
     setVoiceModeEnabled(val);
   };
 
-  /* ── Generate Voice Fingerprint (POST) ──────────────────────────────────── */
+  /* ── Generate Voice Fingerprint ─────────────────────────────────────────── */
   const handleGenerateFingerprint = async (samples: string) => {
     setFingerprintLoading(true);
     try {
-      const res = await fetch(`${API_AI}/voice-fingerprint`, {
+      const res  = await fetch(`${API_AI}/voice-fingerprint`, {
         method: "POST",
         headers: jsonHeaders(),
-        body: JSON.stringify({ samples }), // user's own writing — not AI-generated posts
+        body: JSON.stringify({ samples }),
       });
       const data = await res.json();
-
       if (res.ok && data.fingerprint) {
         setVoiceFingerprint(data.fingerprint);
         toast({
@@ -169,103 +155,24 @@ export default function WritePage() {
           description: data.message || "Paste more of your own writing and try again.",
         });
       }
-    } catch (err) {
+    } catch {
       toast({ variant: "destructive", title: "Error", description: "Fingerprint generation failed." });
     } finally {
       setFingerprintLoading(false);
     }
   };
 
-  /* ── Send Message ────────────────────────────────────────────────────────── */
-  const handleSendMessage = async () => {
-    if (!input.trim() || isGenerating) return;
-
-    const currentInput = input;
-    const tempId = Date.now().toString();
-    const userMessage: Message = { id: tempId, role: "user", content: currentInput };
-
-    const chatHistory = messages.map(m => ({
-      role: m.role === "assistant" ? "assistant" : "user",
-      content: m.content,
-    }));
-
-    setMessages(prev => [...prev, userMessage]);
-    setInput("");
-    setIsGenerating(true);
-
-    try {
-      const response = await fetch(`${API_BASE}/generate`, {
-        method: "POST",
-        headers: jsonHeaders(),
-        body: JSON.stringify({
-          prompt: currentInput,
-          postType,
-          tone,
-          history: chatHistory,
-          voiceMode: voiceModeEnabled,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (response.status === 403) {
-        setIsLimitReached(true);
-        setMessages(prev => prev.filter(m => m.id !== tempId));
-        setInput(currentInput);
-        return;
-      }
-
-      if (response.ok) {
-        // Use a stable temp id for the assistant message while we wait for DB
-        const aiTempId = "ai-" + Date.now();
-
-        setMessages(prev => [...prev, {
-          id: aiTempId,
-          role: "assistant",
-          content: data.content,
-          postType: data.postType,
-          tone: data.tone,
-          isSaved: false,
-          prompt: currentInput,
-          voiceModeUsed: data.voiceModeUsed || false,
-        }]);
-
-        // ── Save to DB and get back the real MongoDB _id ──────────────────────
-        const realMessageId = await autoSaveInteraction(currentInput, data.content);
-
-        // ── Swap temp id → real _id so handleSavePost sends the correct id ────
-        if (realMessageId) {
-          setMessages(prev =>
-            prev.map(m =>
-              m.id === aiTempId
-                ? { ...m, id: realMessageId }
-                : m
-            )
-          );
-        }
-        // If realMessageId is null (autoSave failed), the temp id stays.
-        // handleSavePost will still work — it just won't link in Conversation.
-        // The post will still save to the Post collection correctly.
-      } else {
-        throw new Error(data.message || "Server Error");
-      }
-    } catch (err: any) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: err.message || "Generation failed.",
-      });
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-  /* ── Auto-save interaction to chat history ───────────────────────────────── */
+  /* ── Auto-save to Conversation + return real message _id ─────────────────
+     KEY FIX: returns the real MongoDB _id of the assistant message so
+     handleSendMessage can swap the temp id and handleSavePost sends the
+     correct id to the backend.
+  ──────────────────────────────────────────────────────────────────────── */
   const autoSaveInteraction = async (
     userPrompt: string,
-    aiContent: string
-  ): Promise<string | null> => {                          // ← return type added
+    aiContent:  string,
+  ): Promise<string | null> => {
     try {
-      const res = await fetch(`${API_CHAT}/save-interaction`, {
+      const res  = await fetch(`${API_CHAT}/save-interaction`, {
         method: "POST",
         headers: jsonHeaders(),
         body: JSON.stringify({
@@ -282,16 +189,13 @@ export default function WritePage() {
         if (!currentChatId) setCurrentChatId(data._id);
         fetchHistory();
 
-        // ── NEW: find the assistant message _id in the returned conversation ──
-        // The backend pushes [userMsg, assistantMsg] so the last message is ours.
-        const savedMessages = data.messages || [];
-        const assistantMsg = [...savedMessages].reverse().find(
-          (m: any) => m.role === "assistant"
-        );
-
-        return assistantMsg?._id?.toString() || null;    // ← return real _id
+        // Find the real _id of the assistant message we just pushed.
+        // Backend always appends [userMsg, assistantMsg], so the last
+        // assistant message in the returned array is the one we just saved.
+        const msgs: any[] = data.messages || [];
+        const lastAssistant = [...msgs].reverse().find((m: any) => m.role === "assistant");
+        return lastAssistant?._id?.toString() || null;
       }
-
       return null;
     } catch (err) {
       console.error("Auto-save failed", err);
@@ -299,7 +203,80 @@ export default function WritePage() {
     }
   };
 
-  /* ── Save post to library ────────────────────────────────────────────────── */
+  /* ── Send Message ───────────────────────────────────────────────────────── */
+  const handleSendMessage = async () => {
+    if (!input.trim() || isGenerating) return;
+
+    const currentInput = input;
+    const tempId       = Date.now().toString();
+
+    const chatHistory = messages.map(m => ({
+      role:    m.role === "assistant" ? "assistant" : "user",
+      content: m.content,
+    }));
+
+    setMessages(prev => [...prev, { id: tempId, role: "user", content: currentInput }]);
+    setInput("");
+    setIsGenerating(true);
+
+    try {
+      const response = await fetch(`${API_BASE}/generate`, {
+        method: "POST",
+        headers: jsonHeaders(),
+        body: JSON.stringify({
+          prompt:    currentInput,
+          postType,
+          tone,
+          history:   chatHistory,
+          voiceMode: voiceModeEnabled,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.status === 403) {
+        setIsLimitReached(true);
+        setMessages(prev => prev.filter(m => m.id !== tempId));
+        setInput(currentInput);
+        return;
+      }
+
+      if (response.ok) {
+        // Give the assistant message a temp id first so the UI renders immediately
+        const aiTempId = "ai-" + Date.now();
+
+        setMessages(prev => [...prev, {
+          id:            aiTempId,
+          role:          "assistant",
+          content:       data.content,
+          postType:      data.postType,
+          tone:          data.tone,
+          isSaved:       false,
+          postId:        undefined,
+          prompt:        currentInput,
+          voiceModeUsed: data.voiceModeUsed || false,
+        }]);
+
+        // Save to Conversation in DB, get real MongoDB message _id back
+        const realMsgId = await autoSaveInteraction(currentInput, data.content);
+
+        // Swap temp id → real MongoDB _id so handleSavePost sends the correct id
+        if (realMsgId) {
+          setMessages(prev =>
+            prev.map(m => m.id === aiTempId ? { ...m, id: realMsgId } : m)
+          );
+        }
+      } else {
+        throw new Error(data.message || "Server Error");
+      }
+    } catch (err: any) {
+      toast({ variant: "destructive", title: "Error", description: err.message || "Generation failed." });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  /* ── Save post to library ───────────────────────────────────────────────── */
   const handleSavePost = async (msg: Message) => {
     if (msg.isSaved) return;
     try {
@@ -307,34 +284,31 @@ export default function WritePage() {
         method: "POST",
         headers: jsonHeaders(),
         body: JSON.stringify({
-          prompt: msg.prompt || "LinkedIn Post",
-          content: msg.content,
-          postType: msg.postType,
-          tone: msg.tone,
-          messageId: msg.id,
+          prompt:    msg.prompt || "LinkedIn Post",
+          content:   msg.content,
+          postType:  msg.postType,
+          tone:      msg.tone,
+          messageId: msg.id, // real MongoDB Conversation message _id after the swap
         }),
       });
       const savedData = await response.json();
       if (response.ok) {
         setMessages(prev =>
-          prev.map(m => m.id === msg.id
-            ? { ...m, isSaved: true, postId: savedData._id }
-            : m
+          prev.map(m =>
+            m.id === msg.id
+              ? { ...m, isSaved: true, postId: savedData._id?.toString() }
+              : m
           )
         );
         toast({ title: "Saved to Library", description: "This post is now stored in your library." });
       }
-    } catch (err) {
+    } catch {
       toast({ variant: "destructive", title: "Error", description: "Save failed." });
     }
   };
 
-  /* ── Post to LinkedIn ────────────────────────────────────────────────────── */
-  const handleAutoDraft = async (
-    messageId: string,
-    postId: string,
-    content: string
-  ) => {
+  /* ── Post to LinkedIn ───────────────────────────────────────────────────── */
+  const handleAutoDraft = async (messageId: string, postId: string, content: string) => {
     if (!isLinkedInConnected) {
       return toast({
         title: "LinkedIn Not Connected",
@@ -342,49 +316,30 @@ export default function WritePage() {
         variant: "destructive",
       });
     }
-
     setIsAgentActing(messageId);
-
     try {
       const response = await fetch(`${API_AI}/auto-draft`, {
         method: "POST",
         headers: jsonHeaders(),
-        body: JSON.stringify({
-          postContent: content,
-          postId: postId,        // ✅ correct
-          messageId: messageId,  // ✅ correct
-        }),
+        body: JSON.stringify({ postContent: content, postId, messageId }),
       });
-
       const data = await response.json();
-
       if (response.ok) {
         setMessages(prev =>
-          prev.map(m =>
-            m.id === messageId
-              ? { ...m, lastLinkedinUrl: data.linkedinUrl }
-              : m
-          )
+          prev.map(m => m.id === messageId ? { ...m, lastLinkedinUrl: data.linkedinUrl } : m)
         );
-
-        toast({
-          title: "Posted to LinkedIn 🚀",
-          description: "Your post is live.",
-        });
+        toast({ title: "Posted to LinkedIn 🚀", description: "Your post is live." });
       } else {
         throw new Error(data.message || "Agent failed.");
       }
     } catch (err: any) {
-      toast({
-        variant: "destructive",
-        title: "Agent Error",
-        description: err.message || "Failed to post.",
-      });
+      toast({ variant: "destructive", title: "Agent Error", description: err.message || "Failed to post." });
     } finally {
       setIsAgentActing(null);
     }
   };
-  /* ── Copy ────────────────────────────────────────────────────────────────── */
+
+  /* ── Copy ───────────────────────────────────────────────────────────────── */
   const handleCopy = (id: string, content: string) => {
     navigator.clipboard.writeText(content);
     setCopiedId(id);
@@ -392,25 +347,33 @@ export default function WritePage() {
     toast({ title: "Copied!", description: "Ready to paste on LinkedIn." });
   };
 
-  /* ── Chat management ─────────────────────────────────────────────────────── */
+  /* ── Chat management ────────────────────────────────────────────────────── */
   const handleNewChat = () => { setMessages([]); setCurrentChatId(null); setInput(""); };
 
+  /* ── KEY FIX: postId is now mapped so LinkedIn button works after refresh ──
+     Previously postId was missing from this mapping. After a page refresh and
+     clicking a chat, msg.postId was undefined, causing the LinkedIn button to
+     show "Save Required" even when isSaved was true.
+  ──────────────────────────────────────────────────────────────────────────── */
   const handleSelectChat = async (id: string) => {
     try {
-      const res = await fetch(`${API_CHAT}/${id}`, { headers: authHeaders() });
+      const res  = await fetch(`${API_CHAT}/${id}`, { headers: authHeaders() });
       const data = await res.json();
       if (res.ok) {
         setCurrentChatId(data._id);
-        const mapped = data.messages.map((m: any, index: number) => ({
-          id: m._id,
-          role: m.role,
-          content: m.content,
-          postType: data.postType,
-          tone: data.tone,
-          prompt: m.role === "assistant" ? (data.messages[index - 1]?.content || "") : "",
-          lastLinkedinUrl: m.lastLinkedinUrl,
-          isSaved: !!m.postId
-
+        const mapped: Message[] = data.messages.map((m: any, index: number) => ({
+          id:              m._id?.toString(),
+          role:            m.role,
+          content:         m.content,
+          postType:        data.postType,
+          tone:            data.tone,
+          prompt:          m.role === "assistant"
+                             ? (data.messages[index - 1]?.content || "")
+                             : "",
+          lastLinkedinUrl: m.lastLinkedinUrl || undefined,
+          isSaved:         !!m.postId,
+          postId:          m.postId?.toString() || undefined, // ← THE FIX
+          voiceModeUsed:   false,
         }));
         setMessages(mapped);
         setPostType(data.postType);
@@ -448,7 +411,8 @@ export default function WritePage() {
   };
 
   const handleConnectLinkedIn = () => {
-    window.location.href = `${import.meta.env.VITE_API_URL}/api/auth/linkedin/connect?token=${localStorage.getItem("authToken")}`;
+    window.location.href =
+      `${import.meta.env.VITE_API_URL}/api/auth/linkedin/connect?token=${localStorage.getItem("authToken")}`;
   };
 
   /* ─── Render ─────────────────────────────────────────────────────────────── */
@@ -456,7 +420,7 @@ export default function WritePage() {
     <DashboardLayout>
       <div className="flex h-[calc(100vh-64px)] lg:h-screen overflow-hidden">
 
-        {/* ── Desktop Sidebar ────────────────────────────────────────────────── */}
+        {/* ── Desktop Sidebar ─────────────────────────────────────────────── */}
         <div className="hidden lg:block h-full border-r">
           <ChatSidebar
             chats={chats}
@@ -473,7 +437,7 @@ export default function WritePage() {
           />
         </div>
 
-        {/* ── Mobile History Drawer ─────────────────────────────────────────── */}
+        {/* ── Mobile History Drawer ────────────────────────────────────────── */}
         <AnimatePresence>
           {isHistoryOpen && (
             <>
@@ -488,14 +452,6 @@ export default function WritePage() {
                 className="fixed right-0 top-0 bottom-0 w-[300px] bg-background z-[101] lg:hidden border-l shadow-2xl flex flex-col"
               >
                 <div className="flex-1 overflow-hidden">
-                  {/* ─── BUG 2 FIXED ────────────────────────────────────────────
-                      Was: onVoiceModeToggle={setVoiceModeEnabled}  ← raw setter,
-                           bypassed the fingerprint guard entirely on mobile.
-                      Now: onVoiceModeToggle={handleVoiceModeToggle} ← same guarded
-                           handler used by the desktop sidebar. Both platforms now
-                           show a toast and block the toggle when no fingerprint
-                           exists, instead of silently enabling broken Voice Mode.
-                  ──────────────────────────────────────────────────────────── */}
                   <ChatSidebar
                     chats={chats}
                     onSelectChat={(id) => { handleSelectChat(id); setIsHistoryOpen(false); }}
@@ -515,7 +471,7 @@ export default function WritePage() {
           )}
         </AnimatePresence>
 
-        {/* ── Main Workspace ────────────────────────────────────────────────── */}
+        {/* ── Main Workspace ───────────────────────────────────────────────── */}
         <div className="flex-1 flex flex-col relative bg-background overflow-hidden">
 
           {/* Header */}
@@ -541,16 +497,14 @@ export default function WritePage() {
                 </div>
               )}
               <Button
-                variant="outline"
-                size="sm"
+                variant="outline" size="sm"
                 className="lg:hidden h-8 w-8 p-0 border-amber-200"
                 onClick={() => setIsHistoryOpen(true)}
               >
                 <History className="w-4 h-4 text-amber-600" />
               </Button>
               <Button
-                variant="ghost"
-                size="sm"
+                variant="ghost" size="sm"
                 className="text-muted-foreground hover:text-amber-600 h-8 text-xs"
                 onClick={() => setMessages([])}
               >
@@ -593,7 +547,7 @@ export default function WritePage() {
               </div>
             )}
 
-            {/* Scrollable messages */}
+            {/* Messages */}
             <div ref={scrollRef} className="absolute inset-0 overflow-y-auto no-scrollbar px-4 md:px-6 py-8 z-10">
               <div className="max-w-3xl mx-auto space-y-8 pb-32">
                 <AnimatePresence mode="popLayout">
@@ -614,7 +568,7 @@ export default function WritePage() {
                           : "bg-white dark:bg-slate-950 border border-amber-100 dark:border-amber-900/30 shadow-xl shadow-amber-900/5 rounded-tl-none"
                       )}>
 
-                        {/* AI post tags */}
+                        {/* Tags (AI only) */}
                         {msg.role === "assistant" && (
                           <div className="flex flex-wrap items-center gap-1.5 mb-3">
                             <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-400 text-black">
@@ -639,6 +593,7 @@ export default function WritePage() {
                         {/* Action buttons (AI only) */}
                         {msg.role === "assistant" && (
                           <div className="flex flex-col gap-3 mt-4 pt-4 border-t border-amber-50 dark:border-amber-900/20">
+
                             {msg.lastLinkedinUrl && (
                               <motion.a
                                 initial={{ opacity: 0, x: -10 }}
@@ -653,6 +608,8 @@ export default function WritePage() {
                             )}
 
                             <div className="flex items-center gap-1 md:gap-2">
+
+                              {/* Copy */}
                               <Button
                                 variant="ghost" size="sm"
                                 className="h-7 md:h-8 rounded-lg text-[10px] md:text-xs px-2 md:px-3"
@@ -664,6 +621,7 @@ export default function WritePage() {
                                 </span>
                               </Button>
 
+                              {/* Save */}
                               <Button
                                 variant="ghost" size="sm"
                                 onClick={() => handleSavePost(msg)}
@@ -677,12 +635,13 @@ export default function WritePage() {
                                 <span>{msg.isSaved ? "Saved" : "Save"}</span>
                               </Button>
 
+                              {/* Post to LinkedIn */}
                               <Button
                                 variant="ghost" size="sm"
                                 disabled={isAgentActing !== null}
                                 className={cn(
                                   "h-7 md:h-8 rounded-lg text-[10px] md:text-xs px-2 md:px-3 transition-all",
-                                  !msg.isSaved && "opacity-50 cursor-not-allowed",
+                                  !msg.postId && "opacity-50 cursor-not-allowed",
                                   isLinkedInConnected
                                     ? "text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20"
                                     : "text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 border border-dashed border-amber-200"
@@ -695,7 +654,7 @@ export default function WritePage() {
                                     });
                                   }
                                   if (isLinkedInConnected) {
-                                    handleAutoDraft(msg.id, msg.postId!, msg.content);
+                                    handleAutoDraft(msg.id, msg.postId, msg.content);
                                   } else {
                                     handleConnectLinkedIn();
                                   }
@@ -704,7 +663,7 @@ export default function WritePage() {
                                 {isAgentActing === msg.id
                                   ? <Loader2 className="w-3 h-3 md:mr-2 animate-spin" />
                                   : isLinkedInConnected
-                                    ? <Zap className={cn("w-3 h-3 md:mr-2", msg.isSaved ? "fill-current" : "")} />
+                                    ? <Zap className={cn("w-3 h-3 md:mr-2", msg.postId ? "fill-current" : "")} />
                                     : <Link2 className="w-3 h-3 md:mr-2" />
                                 }
                                 <span>
@@ -716,6 +675,7 @@ export default function WritePage() {
                                   }
                                 </span>
                               </Button>
+
                             </div>
                           </div>
                         )}
@@ -741,11 +701,11 @@ export default function WritePage() {
             </div>
           </main>
 
-          {/* Footer / Input console */}
+          {/* Footer */}
           <footer className="border-amber-100 dark:border-amber-900/20 pt-4 pb-2 px-4 z-20">
             <div className="max-w-3xl mx-auto space-y-3">
 
-              {/* Voice mode active bar above input */}
+              {/* Voice mode bar */}
               <AnimatePresence>
                 {voiceModeEnabled && voiceFingerprint && (
                   <motion.div
@@ -784,13 +744,10 @@ export default function WritePage() {
                             ? "bg-white dark:bg-amber-500 shadow-sm text-amber-600 dark:text-black"
                             : "text-muted-foreground hover:text-foreground"
                         )}
-                      >
-                        {t}
-                      </button>
+                      >{t}</button>
                     ))}
                   </div>
                 </div>
-
                 <div className="flex items-center gap-2 overflow-x-auto no-scrollbar w-full md:w-auto">
                   <Palette className="w-3.5 h-3.5 text-amber-600 shrink-0" />
                   <div className="flex bg-slate-100 dark:bg-slate-900 p-1 rounded-xl border border-amber-100/50">
@@ -804,9 +761,7 @@ export default function WritePage() {
                             ? "bg-white dark:bg-amber-500 shadow-sm text-amber-600 dark:text-black"
                             : "text-muted-foreground hover:text-foreground"
                         )}
-                      >
-                        {t}
-                      </button>
+                      >{t}</button>
                     ))}
                   </div>
                 </div>
@@ -823,10 +778,7 @@ export default function WritePage() {
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault();
-                      handleSendMessage();
-                    }
+                    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSendMessage(); }
                   }}
                   className="min-h-[80px] md:min-h-[120px] w-full resize-none border-none focus-visible:ring-0 bg-white dark:bg-slate-950 p-4 md:p-6 text-sm md:text-base pr-14 md:pr-20"
                 />
@@ -849,7 +801,7 @@ export default function WritePage() {
           </footer>
         </div>
 
-        {/* ── Premium limit modal ───────────────────────────────────────────── */}
+        {/* ── Premium limit modal ──────────────────────────────────────────── */}
         <AnimatePresence>
           {isLimitReached && (
             <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
@@ -868,9 +820,12 @@ export default function WritePage() {
                   <Zap className="w-10 h-10 text-black -rotate-12" />
                 </div>
                 <div className="mt-8 space-y-4">
-                  <h2 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white">Daily Limit Reached</h2>
+                  <h2 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white">
+                    Daily Limit Reached
+                  </h2>
                   <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">
-                    Your 10 free daily credits are exhausted. Credits reset every <span className="font-bold text-amber-600">12 hours</span>.
+                    Your 10 free daily credits are exhausted. Credits reset every{" "}
+                    <span className="font-bold text-amber-600">12 hours</span>.
                   </p>
                   <div className="bg-amber-50 dark:bg-amber-950/30 p-4 rounded-2xl border border-amber-100 dark:border-amber-900/50">
                     <p className="text-xs font-bold text-amber-700 dark:text-amber-500 uppercase tracking-widest">Pro Tip</p>
@@ -898,6 +853,7 @@ export default function WritePage() {
             </div>
           )}
         </AnimatePresence>
+
       </div>
     </DashboardLayout>
   );
