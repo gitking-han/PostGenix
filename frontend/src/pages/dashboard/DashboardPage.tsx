@@ -7,7 +7,7 @@ import {
   Sparkles, Clock, Star, Loader2,
   AlertTriangle, TrendingUp, Mic2,
   BarChart2, Lightbulb, CheckCircle2,
-  AlertCircle, Info
+  AlertCircle, Info, X
 } from "lucide-react";
 import { ProfileSpotlight } from "./ProfileSpotlight";
 
@@ -22,23 +22,23 @@ interface BrandIntelligence {
   nicheConsistency: number;
   voiceConsistency: number;
   postingFrequency: number;
-  contentVariety:   number;
+  contentVariety: number;
 }
 
 interface BrandScore {
-  score:        number;
+  score: number;
   weeklyChange: number;
 }
 
 interface BrandDrift {
   driftDetected: boolean;
-  driftTopic:    string | null;
-  userNiche:     string | null;
+  driftTopic: string | null;
+  userNiche: string | null;
 }
 
 interface EngagementData {
   avgEngagement: number;
-  nicheAvg:      number;
+  nicheAvg: number;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -63,17 +63,18 @@ const authHeaders = () => ({ "auth-token": localStorage.getItem("authToken") || 
 export default function DashboardPage() {
 
   // ── Core state ──────────────────────────────────────────────────────────────
-  const [posts,   setPosts]   = useState<any[]>([]);
+  const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [getUser, setGetUser] = useState<any>(null);
 
   // ── Analytics state ─────────────────────────────────────────────────────────
-  const [brandScore,       setBrandScore]       = useState<BrandScore | null>(null);
-  const [intelligence,     setIntelligence]     = useState<BrandIntelligence | null>(null);
-  const [drift,            setDrift]            = useState<BrandDrift | null>(null);
-  const [insights,         setInsights]         = useState<BrandInsight[]>([]);
-  const [engagement,       setEngagement]       = useState<EngagementData | null>(null);
+  const [brandScore, setBrandScore] = useState<BrandScore | null>(null);
+  const [intelligence, setIntelligence] = useState<BrandIntelligence | null>(null);
+  const [drift, setDrift] = useState<BrandDrift | null>(null);
+  const [insights, setInsights] = useState<BrandInsight[]>([]);
+  const [engagement, setEngagement] = useState<EngagementData | null>(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(true);
+  const [isDismissed, setIsDismissed] = useState(false);
 
   // ─── Dismiss spotlight ──────────────────────────────────────────────────────
   const handleDismissSpotlight = async () => {
@@ -88,18 +89,26 @@ export default function DashboardPage() {
     }
   };
 
+  const [isFingerprintDismissed, setIsFingerprintDismissed] = useState(() => {
+    return localStorage.getItem("dismissedVoiceFingerprint") === "true";
+  });
+
+  const handleDismissFingerprint = () => {
+    setIsFingerprintDismissed(true);
+    localStorage.setItem("dismissedVoiceFingerprint", "true");
+  };
   // ─── Fetch 1: core data (posts + user) — fast, no AI ────────────────────────
   useEffect(() => {
     const fetchCoreData = async () => {
       try {
         const [postsRes, userRes] = await Promise.all([
-          fetch(API("/api/posts"),         { headers: authHeaders() }),
+          fetch(API("/api/posts"), { headers: authHeaders() }),
           fetch(API("/api/auth/get-user"), { headers: authHeaders() }),
         ]);
         const postsData = await postsRes.json();
-        const userData  = await userRes.json();
+        const userData = await userRes.json();
         if (postsRes.ok) setPosts(postsData);
-        if (userRes.ok)  setGetUser(userData);
+        if (userRes.ok) setGetUser(userData);
       } catch (err) {
         console.error("Core data fetch failed", err);
       } finally {
@@ -116,11 +125,11 @@ export default function DashboardPage() {
       try {
         const [scoreRes, intelligenceRes, driftRes, insightsRes, engagementRes] =
           await Promise.allSettled([
-            fetch(API("/api/analytics/brand-score"),        { headers: authHeaders() }),
+            fetch(API("/api/analytics/brand-score"), { headers: authHeaders() }),
             fetch(API("/api/analytics/brand-intelligence"), { headers: authHeaders() }),
-            fetch(API("/api/analytics/brand-drift"),        { headers: authHeaders() }),
-            fetch(API("/api/analytics/insights"),           { headers: authHeaders() }),
-            fetch(API("/api/analytics/engagement"),         { headers: authHeaders() }),
+            fetch(API("/api/analytics/brand-drift"), { headers: authHeaders() }),
+            fetch(API("/api/analytics/insights"), { headers: authHeaders() }),
+            fetch(API("/api/analytics/engagement"), { headers: authHeaders() }),
           ]);
 
         if (scoreRes.status === "fulfilled" && scoreRes.value.ok) {
@@ -173,45 +182,45 @@ export default function DashboardPage() {
   // ─── Stat cards ──────────────────────────────────────────────────────────────
   const stats = [
     {
-      label:      "Brand score",
-      value:      loading || analyticsLoading
-                    ? "..."
-                    : brandScore != null ? brandScore.score.toString() : "—",
-      suffix:     "/100",
-      icon:       TrendingUp,
-      trend:      analyticsLoading ? "Calculating..." : weeklyChangeLabel,
+      label: "Brand score",
+      value: loading || analyticsLoading
+        ? "..."
+        : brandScore != null ? brandScore.score.toString() : "—",
+      suffix: "/100",
+      icon: TrendingUp,
+      trend: analyticsLoading ? "Calculating..." : weeklyChangeLabel,
       trendColor: !brandScore || brandScore.weeklyChange >= 0
-                    ? "text-amber-500"
-                    : "text-red-400",
+        ? "text-amber-500"
+        : "text-red-400",
     },
     {
-      label:      "Posts published",
-      value:      loading ? "..." : posts.length.toString(),
-      suffix:     "",
-      icon:       FileText,
-      trend:      "All time",
+      label: "Posts published",
+      value: loading ? "..." : posts.length.toString(),
+      suffix: "",
+      icon: FileText,
+      trend: "All time",
       trendColor: "text-muted-foreground",
     },
     {
-      label:      "Avg engagement",
-      value:      analyticsLoading
-                    ? "..."
-                    : engagement != null ? engagement.avgEngagement.toString() : "—",
-      suffix:     engagement != null ? "%" : "",
-      icon:       BarChart2,
-      trend:      analyticsLoading ? "Loading..." : engagementTrend,
+      label: "Avg engagement",
+      value: analyticsLoading
+        ? "..."
+        : engagement != null ? engagement.avgEngagement.toString() : "—",
+      suffix: engagement != null ? "%" : "",
+      icon: BarChart2,
+      trend: analyticsLoading ? "Loading..." : engagementTrend,
       trendColor: engagement && engagement.avgEngagement >= engagement.nicheAvg
-                    ? "text-emerald-500"
-                    : "text-red-400",
+        ? "text-emerald-500"
+        : "text-red-400",
     },
     {
-      label:      isPro ? "Daily AI credits" : "AI credits used",
-      value:      loading
-                    ? "..."
-                    : isPro ? "∞" : `${10 - (getUser?.credits ?? 10)}`,
-      suffix:     isPro ? "" : "/10",
-      icon:       Sparkles,
-      trend:      isPro ? "Pro plan active" : "Resets in 12h",
+      label: isPro ? "Daily AI credits" : "AI credits used",
+      value: loading
+        ? "..."
+        : isPro ? "∞" : `${10 - (getUser?.credits ?? 10)}`,
+      suffix: isPro ? "" : "/10",
+      icon: Sparkles,
+      trend: isPro ? "Pro plan active" : "Resets in 12h",
       trendColor: "text-muted-foreground",
     },
   ];
@@ -219,11 +228,11 @@ export default function DashboardPage() {
   // ─── Brand bars (built from intelligence API response) ───────────────────────
   const brandBars = intelligence
     ? [
-        { label: "Niche consistency",  value: intelligence.nicheConsistency },
-        { label: "Voice consistency",  value: intelligence.voiceConsistency },
-        { label: "Posting frequency",  value: intelligence.postingFrequency },
-        { label: "Content variety",    value: intelligence.contentVariety   },
-      ]
+      { label: "Niche consistency", value: intelligence.nicheConsistency },
+      { label: "Voice consistency", value: intelligence.voiceConsistency },
+      { label: "Posting frequency", value: intelligence.postingFrequency },
+      { label: "Content variety", value: intelligence.contentVariety },
+    ]
     : [];
 
   // ─── Render ──────────────────────────────────────────────────────────────────
@@ -260,20 +269,35 @@ export default function DashboardPage() {
             a successful POST /api/ai/voice-fingerprint call, making this banner
             exclusively visible to users who actually have a real fingerprint.
         ──────────────────────────────────────────────────────────────────── */}
-        {!!getUser?.voiceFingerprint?.generatedAt && (
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 p-4 rounded-xl border border-accent/30 bg-accent/5 mb-6">
+        {/* ── Voice Fingerprint banner ───────────────────────────────────── */}
+        {!!getUser?.voiceFingerprint?.generatedAt && !isFingerprintDismissed && (
+          <div className="relative group flex flex-col sm:flex-row items-start sm:items-center gap-3 p-4 rounded-xl border border-accent/30 bg-accent/5 mb-6 transition-all hover:border-accent/50">
+            
+            {/* Dismiss Button - Appears on hover */}
+            <button 
+              onClick={handleDismissFingerprint}
+              className="absolute top-2 right-2 p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity hover:bg-accent/10 text-muted-foreground"
+              aria-label="Dismiss"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
             <div className="w-10 h-10 rounded-lg bg-accent/20 flex items-center justify-center shrink-0">
               <Mic2 className="w-5 h-5 text-accent" />
             </div>
-            <div className="flex-1 min-w-0">
+            
+            <div className="flex-1 min-w-0 pr-4">
               <p className="font-medium text-foreground text-sm">Your Voice Fingerprint is ready</p>
               <p className="text-xs text-muted-foreground mt-0.5">
                 {getUser.voiceFingerprint?.summary ||
                   "Your tone and writing style have been mapped. Posts now generate in your voice."}
               </p>
             </div>
-            <Link to="/dashboard/write" className="shrink-0">
-              <Button variant="outline" size="sm">View Fingerprint</Button>
+
+            <Link to="/dashboard/write" className="shrink-0 w-full sm:w-auto">
+              <Button variant="outline" size="sm" className="w-full sm:w-auto border-accent/40 hover:bg-accent/10 text-accent-foreground font-semibold">
+                Compose with Authority
+              </Button>
             </Link>
           </div>
         )}
@@ -434,8 +458,8 @@ export default function DashboardPage() {
               </div>
             ) : posts.length > 0 ? (
               posts.slice(0, 3).map((post) => {
-                const likes       = post.engagement?.likes       ?? 0;
-                const comments    = post.engagement?.comments    ?? 0;
+                const likes = post.engagement?.likes ?? 0;
+                const comments = post.engagement?.comments ?? 0;
                 const impressions = post.engagement?.impressions ?? 0;
                 const denominator = impressions > 0 ? impressions : 500;
                 const engRate = post.linkedinPostId
@@ -469,11 +493,10 @@ export default function DashboardPage() {
                         )}
 
                         {engRate !== null && (
-                          <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full uppercase tracking-wide ${
-                            engRate >= 3
+                          <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full uppercase tracking-wide ${engRate >= 3
                               ? "bg-emerald-500/15 text-emerald-500"
                               : "bg-red-500/15 text-red-400"
-                          }`}>
+                            }`}>
                             {engRate}% eng.
                           </span>
                         )}
