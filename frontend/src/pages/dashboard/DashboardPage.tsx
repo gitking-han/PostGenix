@@ -269,23 +269,37 @@ export default function DashboardPage() {
             a successful POST /api/ai/voice-fingerprint call, making this banner
             exclusively visible to users who actually have a real fingerprint.
         ──────────────────────────────────────────────────────────────────── */}
-        {!!getUser?.voiceFingerprint?.generatedAt && (
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 p-4 rounded-xl border border-accent/30 bg-accent/5 mb-6">
-            <div className="w-10 h-10 rounded-lg bg-accent/20 flex items-center justify-center shrink-0">
-              <Mic2 className="w-5 h-5 text-accent" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-medium text-foreground text-sm">Your Voice Fingerprint is ready</p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {getUser.voiceFingerprint?.summary ||
-                  "Your tone and writing style have been mapped. Posts now generate in your voice."}
-              </p>
-            </div>
-            <Link to="/dashboard/write" className="shrink-0">
-              <Button variant="outline" size="sm">View Fingerprint</Button>
-            </Link>
-          </div>
-        )}
+        {!!getUser?.voiceFingerprint?.generatedAt && !isFingerprintDismissed && (
+  <div className="relative flex flex-col sm:flex-row items-start sm:items-center gap-3 p-4 rounded-xl border border-accent/30 bg-accent/5 mb-6">
+    {/* Dismiss Button */}
+    <button 
+      onClick={handleDismissFingerprint}
+      className="absolute top-3 right-3 text-muted-foreground hover:text-foreground transition-colors"
+      aria-label="Close"
+    >
+      <X className="w-4 h-4" />
+    </button>
+
+    <div className="w-10 h-10 rounded-lg bg-accent/20 flex items-center justify-center shrink-0">
+      <Mic2 className="w-5 h-5 text-accent" />
+    </div>
+
+    {/* Added pr-8 on mobile/desktop to ensure text/button never overlap the X */}
+    <div className="flex-1 min-w-0 pr-8 sm:pr-0">
+      <p className="font-medium text-foreground text-sm">Your Voice Fingerprint is ready</p>
+      <p className="text-xs text-muted-foreground mt-0.5">
+        {getUser.voiceFingerprint?.summary ||
+          "Your tone and writing style have been mapped. Posts now generate in your voice."}
+      </p>
+    </div>
+
+    <Link to="/dashboard/write" className="shrink-0">
+      <Button variant="outline" size="sm">
+        Compose with Authority
+      </Button>
+    </Link>
+  </div>
+)}
 
         {/* ── Upgrade banner (free only) ──────────────────────────────────── */}
         {!isPro && (
