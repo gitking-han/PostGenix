@@ -295,7 +295,7 @@ export default function DashboardPage() {
             </div>
 
             <Link to="/dashboard/write" className="shrink-0 w-full sm:w-auto">
-              <Button variant="outline" size="sm" className="w-full sm:w-auto border-accent/40 hover:bg-accent/10 text-accent-foreground font-semibold">
+              <Button variant="accent" size="sm" className="hidden sm:flex items-center gap-2">
                 Compose with Authority
               </Button>
             </Link>
