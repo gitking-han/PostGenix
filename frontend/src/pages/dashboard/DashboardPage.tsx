@@ -269,35 +269,20 @@ export default function DashboardPage() {
             a successful POST /api/ai/voice-fingerprint call, making this banner
             exclusively visible to users who actually have a real fingerprint.
         ──────────────────────────────────────────────────────────────────── */}
-        {/* ── Voice Fingerprint banner ───────────────────────────────────── */}
-        {!!getUser?.voiceFingerprint?.generatedAt && !isFingerprintDismissed && (
-          <div className="relative group flex flex-col sm:flex-row items-start sm:items-center gap-3 p-4 rounded-xl border border-accent/30 bg-accent/5 mb-6 transition-all hover:border-accent/50">
-            
-            {/* Dismiss Button - Appears on hover */}
-            <button 
-              onClick={handleDismissFingerprint}
-              className="absolute top-2 right-2 p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity hover:bg-accent/10 text-muted-foreground"
-              aria-label="Dismiss"
-            >
-              <X className="w-4 h-4" />
-            </button>
-
+        {!!getUser?.voiceFingerprint?.generatedAt && (
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 p-4 rounded-xl border border-accent/30 bg-accent/5 mb-6">
             <div className="w-10 h-10 rounded-lg bg-accent/20 flex items-center justify-center shrink-0">
               <Mic2 className="w-5 h-5 text-accent" />
             </div>
-            
-            <div className="flex-1 min-w-0 pr-4">
+            <div className="flex-1 min-w-0">
               <p className="font-medium text-foreground text-sm">Your Voice Fingerprint is ready</p>
               <p className="text-xs text-muted-foreground mt-0.5">
                 {getUser.voiceFingerprint?.summary ||
                   "Your tone and writing style have been mapped. Posts now generate in your voice."}
               </p>
             </div>
-
-            <Link to="/dashboard/write" className="shrink-0 w-full sm:w-auto">
-              <Button variant="accent" size="sm" className="hidden sm:flex items-center gap-2">
-                Compose with Authority
-              </Button>
+            <Link to="/dashboard/write" className="shrink-0">
+              <Button variant="outline" size="sm">View Fingerprint</Button>
             </Link>
           </div>
         )}
