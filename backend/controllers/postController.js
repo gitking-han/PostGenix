@@ -563,31 +563,34 @@ exports.savePost = async (req, res) => {
   try {
     const { prompt, content, postType, tone, messageId } = req.body;
 
+    // 1. Create the post
     const newPost = await Post.create({
       user: req.user.id,
       prompt,
       content,
       postType,
       tone,
-      isSaved: true
+      isSaved: true,
+      messageId: messageId // Store this link!
     });
 
+    // 2. Update the conversation (The Fix)
     if (messageId) {
-      const result = await Conversation.updateOne(
-        { "messages._id": messageId },
+      await Conversation.findOneAndUpdate(
+        { 
+          "messages._id": messageId, 
+          user: req.user.id // Security: Ensure it's the user's chat
+        },
         {
-          $set: {
-            "messages.$.postId": newPost._id
-          }
-        }
+          $set: { "messages.$.postId": newPost._id }
+        },
+        { new: true }
       );
-
-      console.log("POST LINK RESULT:", result);
     }
 
     res.status(201).json(newPost);
   } catch (error) {
-    console.error(error);
+    console.error("Save Post Error:", error);
     res.status(500).json({ message: "Could not save post" });
   }
 };

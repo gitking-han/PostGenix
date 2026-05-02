@@ -6,6 +6,7 @@ const postSchema = new mongoose.Schema({
     ref: 'user',
     required: true 
   },
+  messageId: { type: String, unique: true },
   prompt:   { type: String, required: true },
   content:  { type: String, required: true },
   postType: { type: String, default: "Long" },

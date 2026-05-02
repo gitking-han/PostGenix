@@ -356,33 +356,51 @@ export default function WritePage() {
      show "Save Required" even when isSaved was true.
   ──────────────────────────────────────────────────────────────────────────── */
   const handleSelectChat = async (id: string) => {
-    try {
-      const res  = await fetch(`${API_CHAT}/${id}`, { headers: authHeaders() });
-      const data = await res.json();
-      if (res.ok) {
-        setCurrentChatId(data._id);
-        const mapped: Message[] = data.messages.map((m: any, index: number) => ({
+  try {
+    // Fetch both the Chat and the Saved Posts in parallel
+    const [chatRes, postsRes] = await Promise.all([
+      fetch(`${API_CHAT}/${id}`, { headers: authHeaders() }),
+      fetch(`${API_BASE}`, { headers: authHeaders() }) // This fetches all saved posts
+    ]);
+
+    const chatData = await chatRes.json();
+    const savedPosts = await postsRes.json();
+
+    if (chatRes.ok && postsRes.ok) {
+      setCurrentChatId(chatData._id);
+
+      const mapped: Message[] = chatData.messages.map((m: any, index: number) => {
+        // CROSS-REFERENCE: Find if a post exists in the library for this message
+        // We match by messageId OR by checking if the content is identical
+        const existingPost = savedPosts.find((p: any) => 
+          p.messageId === m._id?.toString() || p.content === m.content
+        );
+
+        return {
           id:              m._id?.toString(),
           role:            m.role,
           content:         m.content,
-          postType:        data.postType,
-          tone:            data.tone,
-          prompt:          m.role === "assistant"
-                             ? (data.messages[index - 1]?.content || "")
+          postType:        chatData.postType,
+          tone:            chatData.tone,
+          prompt:          m.role === "assistant" 
+                             ? (chatData.messages[index - 1]?.content || "") 
                              : "",
           lastLinkedinUrl: m.lastLinkedinUrl || undefined,
-          isSaved:         !!m.postId,
-          postId:          m.postId?.toString() || undefined, // ← THE FIX
+          // If we found it in the Post schema, it IS saved
+          isSaved:         !!existingPost, 
+          postId:          existingPost ? existingPost._id?.toString() : undefined,
           voiceModeUsed:   false,
-        }));
-        setMessages(mapped);
-        setPostType(data.postType);
-        setTone(data.tone);
-      }
-    } catch {
-      toast({ variant: "destructive", title: "Error", description: "Failed to load chat" });
+        };
+      });
+
+      setMessages(mapped);
+      setPostType(chatData.postType);
+      setTone(chatData.tone);
     }
-  };
+  } catch (err) {
+    toast({ variant: "destructive", title: "Error", description: "Failed to load chat" });
+  }
+};
 
   const handleDeleteChat = async (id: string) => {
     try {
