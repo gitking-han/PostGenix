@@ -270,36 +270,36 @@ export default function DashboardPage() {
             exclusively visible to users who actually have a real fingerprint.
         ──────────────────────────────────────────────────────────────────── */}
         {!!getUser?.voiceFingerprint?.generatedAt && !isFingerprintDismissed && (
-  <div className="relative flex flex-col sm:flex-row items-start sm:items-center gap-3 p-4 rounded-xl border border-accent/30 bg-accent/5 mb-6">
-    {/* Dismiss Button */}
-    <button 
-      onClick={handleDismissFingerprint}
-      className="absolute top-3 right-3 text-muted-foreground hover:text-foreground transition-colors"
-      aria-label="Close"
-    >
-      <X className="w-4 h-4" />
-    </button>
+          <div className="group relative flex flex-col sm:flex-row items-start sm:items-center gap-3 p-4 rounded-xl border border-accent/30 bg-accent/5 mb-6">
+            {/* Dismiss Button */}
+            <button
+              onClick={handleDismissFingerprint}
+              className="absolute top-3 right-3 text-muted-foreground hover:text-foreground transition-colors opacity-0 group-hover:opacity-100"
+              aria-label="Close"
+            >
+              <X className="w-4 h-4" />
+            </button>
 
-    <div className="w-10 h-10 rounded-lg bg-accent/20 flex items-center justify-center shrink-0">
-      <Mic2 className="w-5 h-5 text-accent" />
-    </div>
+            <div className="w-10 h-10 rounded-lg bg-accent/20 flex items-center justify-center shrink-0">
+              <Mic2 className="w-5 h-5 text-accent" />
+            </div>
 
-    {/* Added pr-8 on mobile/desktop to ensure text/button never overlap the X */}
-    <div className="flex-1 min-w-0 pr-8 sm:pr-0">
-      <p className="font-medium text-foreground text-sm">Your Voice Fingerprint is ready</p>
-      <p className="text-xs text-muted-foreground mt-0.5">
-        {getUser.voiceFingerprint?.summary ||
-          "Your tone and writing style have been mapped. Posts now generate in your voice."}
-      </p>
-    </div>
+            {/* Added pr-8 on mobile/desktop to ensure text/button never overlap the X */}
+            <div className="flex-1 min-w-0 pr-8 pt-3 sm:pr-0">
+              <p className="font-medium text-foreground text-sm">Your Voice Fingerprint is ready</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {getUser.voiceFingerprint?.summary ||
+                  "Your tone and writing style have been mapped. Posts now generate in your voice."}
+              </p>
+            </div>
 
-    <Link to="/dashboard/write" className="shrink-0">
-      <Button variant="outline" size="sm">
-        Compose with Authority
-      </Button>
-    </Link>
-  </div>
-)}
+            <Link to="/dashboard/write" className="shrink-0 pt-3">
+              <Button variant="outline" size="sm">
+                Compose with Authority
+              </Button>
+            </Link>
+          </div>
+        )}
 
         {/* ── Upgrade banner (free only) ──────────────────────────────────── */}
         {!isPro && (
@@ -493,8 +493,8 @@ export default function DashboardPage() {
 
                         {engRate !== null && (
                           <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full uppercase tracking-wide ${engRate >= 3
-                              ? "bg-emerald-500/15 text-emerald-500"
-                              : "bg-red-500/15 text-red-400"
+                            ? "bg-emerald-500/15 text-emerald-500"
+                            : "bg-red-500/15 text-red-400"
                             }`}>
                             {engRate}% eng.
                           </span>
