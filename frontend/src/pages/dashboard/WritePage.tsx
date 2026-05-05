@@ -14,7 +14,7 @@ import { ChatSidebar } from "./ChatSidebar";
 
 /* ─── Config & Types ─────────────────────────────────────────────────────── */
 const postTypes = ["Short", "Story", "List", "Hot Take", "Career"];
-const tones     = ["Professional", "Casual", "Authority", "Inspirational"];
+const tones = ["Professional", "Casual", "Authority", "Inspirational"];
 
 type Message = {
   id: string;
@@ -41,24 +41,24 @@ const jsonHeaders = () => ({
 export default function WritePage() {
 
   /* ── Core state ─────────────────────────────────────────────────────────── */
-  const [input,            setInput]            = useState("");
-  const [messages,         setMessages]         = useState<Message[]>([]);
-  const [postType,         setPostType]         = useState("Short");
-  const [tone,             setTone]             = useState("Professional");
-  const [isGenerating,     setIsGenerating]     = useState(false);
-  const [copiedId,         setCopiedId]         = useState<string | null>(null);
-  const [isHistoryOpen,    setIsHistoryOpen]    = useState(false);
-  const [isMobile,         setIsMobile]         = useState(false);
-  const [chats,            setChats]            = useState<any[]>([]);
-  const [currentChatId,    setCurrentChatId]    = useState<string | null>(null);
-  const [isLimitReached,   setIsLimitReached]   = useState(false);
+  const [input, setInput] = useState("");
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [postType, setPostType] = useState("Short");
+  const [tone, setTone] = useState("Professional");
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [chats, setChats] = useState<any[]>([]);
+  const [currentChatId, setCurrentChatId] = useState<string | null>(null);
+  const [isLimitReached, setIsLimitReached] = useState(false);
   const [isLinkedInConnected, setIsLinkedInConnected] = useState(false);
-  const [isAgentActing,    setIsAgentActing]    = useState<string | null>(null);
+  const [isAgentActing, setIsAgentActing] = useState<string | null>(null);
 
   /* ── Voice Mode state ───────────────────────────────────────────────────── */
-  const [voiceModeEnabled,    setVoiceModeEnabled]    = useState(false);
-  const [voiceFingerprint,    setVoiceFingerprint]    = useState<any>(null);
-  const [fingerprintLoading,  setFingerprintLoading]  = useState(false);
+  const [voiceModeEnabled, setVoiceModeEnabled] = useState(false);
+  const [voiceFingerprint, setVoiceFingerprint] = useState<any>(null);
+  const [fingerprintLoading, setFingerprintLoading] = useState(false);
   const [fingerprintFetching, setFingerprintFetching] = useState(true);
 
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -66,7 +66,7 @@ export default function WritePage() {
 
   const API_BASE = `${import.meta.env.VITE_API_URL}/api/posts`;
   const API_CHAT = `${import.meta.env.VITE_API_URL}/api/chats`;
-  const API_AI   = `${import.meta.env.VITE_API_URL}/api/ai`;
+  const API_AI = `${import.meta.env.VITE_API_URL}/api/ai`;
 
   /* ── Mobile detection ───────────────────────────────────────────────────── */
   useEffect(() => {
@@ -82,7 +82,7 @@ export default function WritePage() {
       try {
         const [userRes, fpRes] = await Promise.allSettled([
           fetch(`${import.meta.env.VITE_API_URL}/api/auth/get-user`, { headers: authHeaders() }),
-          fetch(`${API_AI}/voice-fingerprint`,                        { headers: authHeaders() }),
+          fetch(`${API_AI}/voice-fingerprint`, { headers: authHeaders() }),
         ]);
         if (userRes.status === "fulfilled" && userRes.value.ok) {
           const d = await userRes.value.json();
@@ -104,7 +104,7 @@ export default function WritePage() {
   /* ── Fetch chat history ─────────────────────────────────────────────────── */
   const fetchHistory = async () => {
     try {
-      const res  = await fetch(`${API_CHAT}/history`, { headers: authHeaders() });
+      const res = await fetch(`${API_CHAT}/history`, { headers: authHeaders() });
       const data = await res.json();
       if (res.ok) setChats(data);
     } catch (err) {
@@ -136,7 +136,7 @@ export default function WritePage() {
   const handleGenerateFingerprint = async (samples: string) => {
     setFingerprintLoading(true);
     try {
-      const res  = await fetch(`${API_AI}/voice-fingerprint`, {
+      const res = await fetch(`${API_AI}/voice-fingerprint`, {
         method: "POST",
         headers: jsonHeaders(),
         body: JSON.stringify({ samples }),
@@ -169,10 +169,10 @@ export default function WritePage() {
   ──────────────────────────────────────────────────────────────────────── */
   const autoSaveInteraction = async (
     userPrompt: string,
-    aiContent:  string,
+    aiContent: string,
   ): Promise<string | null> => {
     try {
-      const res  = await fetch(`${API_CHAT}/save-interaction`, {
+      const res = await fetch(`${API_CHAT}/save-interaction`, {
         method: "POST",
         headers: jsonHeaders(),
         body: JSON.stringify({
@@ -208,10 +208,10 @@ export default function WritePage() {
     if (!input.trim() || isGenerating) return;
 
     const currentInput = input;
-    const tempId       = Date.now().toString();
+    const tempId = Date.now().toString();
 
     const chatHistory = messages.map(m => ({
-      role:    m.role === "assistant" ? "assistant" : "user",
+      role: m.role === "assistant" ? "assistant" : "user",
       content: m.content,
     }));
 
@@ -224,10 +224,10 @@ export default function WritePage() {
         method: "POST",
         headers: jsonHeaders(),
         body: JSON.stringify({
-          prompt:    currentInput,
+          prompt: currentInput,
           postType,
           tone,
-          history:   chatHistory,
+          history: chatHistory,
           voiceMode: voiceModeEnabled,
         }),
       });
@@ -246,14 +246,14 @@ export default function WritePage() {
         const aiTempId = "ai-" + Date.now();
 
         setMessages(prev => [...prev, {
-          id:            aiTempId,
-          role:          "assistant",
-          content:       data.content,
-          postType:      data.postType,
-          tone:          data.tone,
-          isSaved:       false,
-          postId:        undefined,
-          prompt:        currentInput,
+          id: aiTempId,
+          role: "assistant",
+          content: data.content,
+          postType: data.postType,
+          tone: data.tone,
+          isSaved: false,
+          postId: undefined,
+          prompt: currentInput,
           voiceModeUsed: data.voiceModeUsed || false,
         }]);
 
@@ -284,10 +284,10 @@ export default function WritePage() {
         method: "POST",
         headers: jsonHeaders(),
         body: JSON.stringify({
-          prompt:    msg.prompt || "LinkedIn Post",
-          content:   msg.content,
-          postType:  msg.postType,
-          tone:      msg.tone,
+          prompt: msg.prompt || "LinkedIn Post",
+          content: msg.content,
+          postType: msg.postType,
+          tone: msg.tone,
           messageId: msg.id, // real MongoDB Conversation message _id after the swap
         }),
       });
@@ -356,51 +356,51 @@ export default function WritePage() {
      show "Save Required" even when isSaved was true.
   ──────────────────────────────────────────────────────────────────────────── */
   const handleSelectChat = async (id: string) => {
-  try {
-    // Fetch both the Chat and the Saved Posts in parallel
-    const [chatRes, postsRes] = await Promise.all([
-      fetch(`${API_CHAT}/${id}`, { headers: authHeaders() }),
-      fetch(`${API_BASE}`, { headers: authHeaders() }) // This fetches all saved posts
-    ]);
+    try {
+      // Fetch both the Chat and the Saved Posts in parallel
+      const [chatRes, postsRes] = await Promise.all([
+        fetch(`${API_CHAT}/${id}`, { headers: authHeaders() }),
+        fetch(`${API_BASE}`, { headers: authHeaders() }) // This fetches all saved posts
+      ]);
 
-    const chatData = await chatRes.json();
-    const savedPosts = await postsRes.json();
+      const chatData = await chatRes.json();
+      const savedPosts = await postsRes.json();
 
-    if (chatRes.ok && postsRes.ok) {
-      setCurrentChatId(chatData._id);
+      if (chatRes.ok && postsRes.ok) {
+        setCurrentChatId(chatData._id);
 
-      const mapped: Message[] = chatData.messages.map((m: any, index: number) => {
-        // CROSS-REFERENCE: Find if a post exists in the library for this message
-        // We match by messageId OR by checking if the content is identical
-        const existingPost = savedPosts.find((p: any) => 
-          p.messageId === m._id?.toString() || p.content === m.content
-        );
+        const mapped: Message[] = chatData.messages.map((m: any, index: number) => {
+          // CROSS-REFERENCE: Find if a post exists in the library for this message
+          // We match by messageId OR by checking if the content is identical
+          const existingPost = savedPosts.find((p: any) =>
+            p.messageId === m._id?.toString() || p.content === m.content
+          );
 
-        return {
-          id:              m._id?.toString(),
-          role:            m.role,
-          content:         m.content,
-          postType:        chatData.postType,
-          tone:            chatData.tone,
-          prompt:          m.role === "assistant" 
-                             ? (chatData.messages[index - 1]?.content || "") 
-                             : "",
-          lastLinkedinUrl: m.lastLinkedinUrl || undefined,
-          // If we found it in the Post schema, it IS saved
-          isSaved:         !!existingPost, 
-          postId:          existingPost ? existingPost._id?.toString() : undefined,
-          voiceModeUsed:   false,
-        };
-      });
+          return {
+            id: m._id?.toString(),
+            role: m.role,
+            content: m.content,
+            postType: chatData.postType,
+            tone: chatData.tone,
+            prompt: m.role === "assistant"
+              ? (chatData.messages[index - 1]?.content || "")
+              : "",
+            lastLinkedinUrl: m.lastLinkedinUrl || undefined,
+            // If we found it in the Post schema, it IS saved
+            isSaved: !!existingPost,
+            postId: existingPost ? existingPost._id?.toString() : undefined,
+            voiceModeUsed: false,
+          };
+        });
 
-      setMessages(mapped);
-      setPostType(chatData.postType);
-      setTone(chatData.tone);
+        setMessages(mapped);
+        setPostType(chatData.postType);
+        setTone(chatData.tone);
+      }
+    } catch (err) {
+      toast({ variant: "destructive", title: "Error", description: "Failed to load chat" });
     }
-  } catch (err) {
-    toast({ variant: "destructive", title: "Error", description: "Failed to load chat" });
-  }
-};
+  };
 
   const handleDeleteChat = async (id: string) => {
     try {
