@@ -239,7 +239,7 @@ export default function ProfilePage() {
 
                             <div className="space-y-6">
                                 {/* Stats */}
-                                <div className="grid grid-cols-1 gap-5">
+                                <div className="grid grid-cols-1 gap-4">
                                     <StatCard label="Portfolio Views" value={profile.stats?.views} />
                                     <StatCard label="Posts Generated" value={profile.stats?.postsGenerated} />
                                 </div>
