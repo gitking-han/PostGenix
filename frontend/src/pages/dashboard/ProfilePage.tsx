@@ -5,19 +5,20 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Linkedin, Twitter, Loader2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge"; // Ensure you have a Badge component
+import { Linkedin, Twitter, Loader2, Target, Hash, Pencil } from "lucide-react";
 import { CompleteProfileForm } from "@/components/ui/CompleteProfileForm";
 import { Link } from "react-router-dom";
+
 /* ---------- Types ---------- */
 
 interface Profile {
-    username?: string;
     firstName?: string;
     lastName?: string;
     headline?: string;
     bio?: string;
     avatarUrl?: string;
-    coverImageUrl?: string; // <-- Base64 image now
+    coverImageUrl?: string;
     socialLinks?: {
         linkedin?: string;
         twitter?: string;
@@ -36,10 +37,9 @@ interface Profile {
     preferences?: {
         niche?: string;
         tone?: string;
+        brandKeywords?: string[]; // Added this
     };
 }
-
-/* ---------- Component ---------- */
 
 export default function ProfilePage() {
     const [profile, setProfile] = useState<Profile | null>(null);
@@ -47,7 +47,6 @@ export default function ProfilePage() {
     const [error, setError] = useState<string | null>(null);
     const [isEditing, setIsEditing] = useState(false);
     const [refreshKey, setRefreshKey] = useState(0);
-
 
     useEffect(() => {
         const fetchProfile = async () => {
@@ -80,8 +79,6 @@ export default function ProfilePage() {
         fetchProfile();
     }, [refreshKey]);
 
-    /* ---------- Loading / Error ---------- */
-
     if (loading) {
         return (
             <DashboardLayout>
@@ -95,14 +92,10 @@ export default function ProfilePage() {
     if (error || !profile) {
         return (
             <DashboardLayout>
-                <div className="p-8 text-center text-red-500">
-                    {error || "User not found"}
-                </div>
+                <div className="p-8 text-center text-red-500">{error || "User not found"}</div>
             </DashboardLayout>
         );
     }
-
-    /* ---------- UI ---------- */
 
     return (
         <DashboardLayout>
@@ -110,14 +103,15 @@ export default function ProfilePage() {
                 <CompleteProfileForm
                     token={localStorage.getItem("authToken")!}
                     initialData={{
-                        firstName: profile.firstName || "", // ADDED
-                        lastName: profile.lastName || "",   // ADDED
-                        avatarUrl: profile.avatarUrl || "", // ADDED
+                        firstName: profile.firstName || "",
+                        lastName: profile.lastName || "",
+                        avatarUrl: profile.avatarUrl || "",
                         headline: profile.headline || "",
                         bio: profile.bio || "",
                         coverImage: profile.coverImageUrl || "",
                         niche: profile.preferences?.niche,
                         tone: profile.preferences?.tone,
+                        brandKeywords: profile.preferences?.brandKeywords || [], // Pass to form
                         linkedin: profile.socialLinks?.linkedin,
                         twitter: profile.socialLinks?.twitter,
                         github: profile.socialLinks?.github,
@@ -132,17 +126,13 @@ export default function ProfilePage() {
                     onCancel={() => setIsEditing(false)}
                 />
             ) : (
-                <div className="max-w-6xl mx-auto mt-6 rounded-lg bg-background">
+                <div className="max-w-6xl mx-auto mt-6 rounded-lg bg-background border border-border overflow-hidden">
                     {/* Cover */}
-                    <div className="relative h-56 w-full bg-muted rounded-t-lg overflow-hidden">
+                    <div className="relative h-56 w-full bg-muted overflow-hidden">
                         {profile.coverImageUrl ? (
-                            <img
-                                src={profile.coverImageUrl}
-                                alt="Cover"
-                                className="object-cover w-full h-full"
-                            />
+                            <img src={profile.coverImageUrl} alt="Cover" className="object-cover w-full h-full" />
                         ) : (
-                            <div className="w-full h-full bg-gradient-to-r from-blue-400 to-purple-500" />
+                            <div className="w-full h-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500" />
                         )}
                     </div>
 
@@ -150,72 +140,110 @@ export default function ProfilePage() {
                     <div className="relative -mt-20 pl-8">
                         <Avatar className="w-32 h-32 border-4 border-background shadow-lg">
                             <AvatarImage src={profile.avatarUrl} referrerPolicy="no-referrer" />
-                            <AvatarFallback>
-                                {profile.firstName?.[0]}
-                                {profile.lastName?.[0]}
+                            <AvatarFallback className="text-xl">
+                                {profile.firstName?.[0]}{profile.lastName?.[0]}
                             </AvatarFallback>
                         </Avatar>
                     </div>
 
                     {/* Info */}
-                    <div className="pt-20 px-8 pb-8 space-y-6">
+                    <div className="pt-4 px-8 pb-8 space-y-6">
                         <div className="flex flex-col md:flex-row md:justify-between gap-4">
                             <div>
                                 <h1 className="text-3xl font-bold">
                                     {profile.firstName} {profile.lastName}
                                 </h1>
 
-                                <p className="text-muted-foreground">
+                                <p className="text-lg text-muted-foreground">
                                     {profile.headline || "No headline set"}
                                 </p>
 
-                                {profile.location?.city && (
-                                    <p className="text-sm text-muted-foreground">
-                                        {profile.location.city}, {profile.location.country}
-                                    </p>
-                                )}
-
-                                <p className="text-sm text-muted-foreground mt-1">
-                                    Niche: {profile.preferences?.niche || "Not set"} | Tone:{" "}
-                                    {profile.preferences?.tone || "Not set"}
-                                </p>
+                                <div className="flex items-center gap-4 mt-2">
+                                    {profile.location?.city && (
+                                        <p className="text-sm text-muted-foreground">
+                                            {profile.location.city}, {profile.location.country}
+                                        </p>
+                                    )}
+                                    {/* Clickable Niche Prompt */}
+                                    <button 
+                                        onClick={() => setIsEditing(true)}
+                                        className="group flex items-center gap-1.5 text-sm font-medium text-primary hover:opacity-80 transition-all"
+                                    >
+                                        <Target className="w-4 h-4" />
+                                        <span>Niche: {profile.preferences?.niche || "Not set (Click to set)"}</span>
+                                        <Pencil className="w-3 h-3 opacity-0 group-hover:opacity-100" />
+                                    </button>
+                                </div>
 
                                 {/* Socials */}
-                                <div className="flex gap-4 mt-3">
+                                <div className="flex gap-4 mt-4">
                                     {profile.socialLinks?.linkedin && (
-                                        <a href={profile.socialLinks.linkedin} target="_blank">
-                                            <Linkedin className="hover:text-blue-600" />
+                                        <a href={profile.socialLinks.linkedin} target="_blank" className="text-muted-foreground hover:text-blue-600 transition-colors">
+                                            <Linkedin className="w-5 h-5" />
                                         </a>
                                     )}
                                     {profile.socialLinks?.twitter && (
-                                        <a href={profile.socialLinks.twitter} target="_blank">
-                                            <Twitter className="hover:text-blue-400" />
+                                        <a href={profile.socialLinks.twitter} target="_blank" className="text-muted-foreground hover:text-blue-400 transition-colors">
+                                            <Twitter className="w-5 h-5" />
                                         </a>
                                     )}
                                 </div>
                             </div>
 
-                            <div className="flex gap-2">
-                                <Button onClick={() => setIsEditing(true)}>Edit Profile</Button>
-                                <Button variant="outline">
+                            <div className="flex gap-3 items-start">
+                                <Button onClick={() => setIsEditing(true)} className="shadow-sm">Edit Profile</Button>
+                                <Button variant="outline" asChild>
                                     <Link to="/dashboard/settings">Settings</Link>
                                 </Button>
                             </div>
                         </div>
 
-                        {/* Bio */}
-                        <Card className="p-6">
-                            <h2 className="text-lg font-semibold mb-2">About</h2>
-                            <p className="text-muted-foreground">
-                                {profile.bio || "Write something about yourself."}
-                            </p>
-                        </Card>
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            <div className="lg:col-span-2 space-y-6">
+                                {/* Bio */}
+                                <Card className="p-6">
+                                    <h2 className="text-lg font-semibold mb-3">About</h2>
+                                    <p className="text-muted-foreground leading-relaxed">
+                                        {profile.bio || "Write something about yourself to help Nova understand your story."}
+                                    </p>
+                                </Card>
 
-                        {/* Stats */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <StatCard label="Portfolio Views" value={profile.stats?.views} />
-                            <StatCard label="Posts Generated" value={profile.stats?.postsGenerated} />
-                            {/* <StatCard label="Posts Saved" value={profile.stats?.postsPublished} /> */}
+                                {/* NEW: Brand Intelligence Section */}
+                                <Card className="p-6 border-primary/10 bg-primary/[0.01]">
+                                    <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                                        <Hash className="w-5 h-5 text-primary" />
+                                        Brand Intelligence
+                                    </h2>
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="text-xs font-semibold uppercase text-muted-foreground tracking-wider">Your Niche</label>
+                                            <p className="text-sm mt-1">{profile.preferences?.niche || "Not defined yet"}</p>
+                                        </div>
+                                        <div>
+                                            <label className="text-xs font-semibold uppercase text-muted-foreground tracking-wider">Brand Keywords</label>
+                                            <div className="flex flex-wrap gap-2 mt-2">
+                                                {profile.preferences?.brandKeywords && profile.preferences.brandKeywords.length > 0 ? (
+                                                    profile.preferences.brandKeywords.map((tag, i) => (
+                                                        <Badge key={i} variant="secondary" className="px-3 py-1 text-xs font-medium">
+                                                            {tag}
+                                                        </Badge>
+                                                    ))
+                                                ) : (
+                                                    <p className="text-sm text-muted-foreground italic">No keywords added yet.</p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </Card>
+                            </div>
+
+                            <div className="space-y-6">
+                                {/* Stats */}
+                                <div className="grid grid-cols-1 gap-4">
+                                    <StatCard label="Portfolio Views" value={profile.stats?.views} />
+                                    <StatCard label="Posts Generated" value={profile.stats?.postsGenerated} />
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -224,13 +252,11 @@ export default function ProfilePage() {
     );
 }
 
-/* ---------- Small Helper ---------- */
-
 function StatCard({ label, value = 0 }: { label: string; value?: number }) {
     return (
-        <Card className="p-6 text-center">
-            <p className="text-2xl font-bold">{value}</p>
-            <p className="text-muted-foreground">{label}</p>
+        <Card className="p-6 flex flex-col items-center justify-center border-border/60">
+            <p className="text-3xl font-bold text-primary">{value.toLocaleString()}</p>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-tight mt-1">{label}</p>
         </Card>
     );
 }

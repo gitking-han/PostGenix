@@ -49,7 +49,7 @@ const ProfileSchema = new mongoose.Schema(
     stats: {
       followers: { type: Number, default: 0 },
       postsGenerated: { type: Number, default: 0 },
-      views: {type: Number, default: 0}
+      views: { type: Number, default: 0 }
     },
 
     // Location (optional)
@@ -59,12 +59,17 @@ const ProfileSchema = new mongoose.Schema(
     },
 
     // Preferences (future use)
+    // In your ProfileSchema file
     preferences: {
       niche: {
-        type: String, // e.g. SaaS, Web Dev, AI, Marketing
+        type: String,
+      },
+      brandKeywords: {
+        type: [String], // Array of strings for tags
+        default: [],
       },
       tone: {
-        type: String, // professional | casual | storytelling
+        type: String,
         default: 'professional',
       },
     },
