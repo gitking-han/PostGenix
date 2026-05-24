@@ -1,67 +1,98 @@
 const express = require('express');
-const router = express.Router();
-const User = require('../models/User')
+const router  = express.Router();
+const User    = require('../models/User');
 const { Paddle, Environment } = require('@paddle/paddle-node-sdk');
-;
 
 const paddle = new Paddle(process.env.PADDLE_API_KEY, {
-  environment: Environment.sandbox, 
+  environment: Environment.sandbox, // ← change to Environment.production when going live
 });
 
 router.post('/webhook', async (req, res) => {
   const signature = req.headers['paddle-signature'] || '';
-  const secret = process.env.PADDLE_WEBHOOK_SECRET || '';
-  const rawBody = req.rawBody;
+  const secret    = process.env.PADDLE_WEBHOOK_SECRET || '';
+  const rawBody   = req.rawBody;
 
   if (!rawBody) return res.status(400).send("No body");
 
   try {
+    // 1. Verify the webhook signature (throws if invalid)
     paddle.webhooks.unmarshal(rawBody, secret, signature);
-    const event = JSON.parse(rawBody);
+
+    const event     = JSON.parse(rawBody);
     const eventType = event.event_type;
-    const data = event.data;
+    const data      = event.data;
 
     if (!data) return res.json({ success: true });
 
-    const userId = data.custom_data?.userId || data.customData?.userId;
-    const subscriptionId = data.id; 
-    const status = data.status;
+    const userId         = data.custom_data?.userId || data.customData?.userId;
+    const subscriptionId = data.id;
+    const status         = data.status;
 
-    // 1. Handle Activation / Updates
-    if (eventType.includes('subscription.created') || 
-        eventType.includes('subscription.activated') || 
-        eventType.includes('subscription.updated')) {
-      
+    console.log(`📦 Paddle event: ${eventType} | status: ${status} | sub: ${subscriptionId}`);
+
+    // ── 2. Subscription activated / created / updated ────────────────────────
+    if (
+      eventType === 'subscription.created'   ||
+      eventType === 'subscription.activated' ||
+      eventType === 'subscription.updated'
+    ) {
+      const isPro = status === 'active' || status === 'trialing';
+
       const updateData = {
-        plan: (status === 'active' || status === 'trialing') ? 'pro' : 'free',
-        subscriptionId: subscriptionId,
-        paddleCustomerId: data.customer_id || data.customerId,
+        plan:               isPro ? 'pro' : 'free',
+        subscriptionId:     subscriptionId,
+        paddleCustomerId:   data.customer_id || data.customerId,
         subscriptionStatus: status,
-        planEndsAt: data.current_billing_period?.ends_at || null 
+        // Keep track of when the current billing period ends
+        planEndsAt:         data.current_billing_period?.ends_at
+                              ? new Date(data.current_billing_period.ends_at)
+                              : null,
       };
 
+      // Use userId from customData if available, otherwise fall back to subscriptionId lookup
       if (userId) {
         await User.findByIdAndUpdate(userId, updateData);
+        console.log(`✅ Updated by userId: ${userId}`);
       } else {
         await User.findOneAndUpdate({ subscriptionId }, updateData);
+        console.log(`✅ Updated by subscriptionId: ${subscriptionId}`);
       }
-      console.log(`✅ Subscription ${status}: ${subscriptionId}`);
     }
 
-    // 2. Handle Cancellation
-    // This event fires when the subscription is fully ended
+    // ── 3. Subscription scheduled for cancellation (user cancelled, still active) ──
+    // Paddle fires this when a user cancels but still has time left in the period.
+    // We mark the status but KEEP planEndsAt so the user retains access until that date.
     if (eventType === 'subscription.canceled') {
+      // ─── CRITICAL FIX ────────────────────────────────────────────────────────
+      // OLD (wrong): planEndsAt: null  → user loses Pro instantly
+      // NEW (correct): keep the billing period end date → user keeps Pro until then
+      //
+      // Paddle's canceled event includes `current_billing_period.ends_at` which
+      // is the last day the user paid for. That's their access expiry.
+      const accessEndsAt = data.current_billing_period?.ends_at
+        ? new Date(data.current_billing_period.ends_at)
+        : null;
+
       await User.findOneAndUpdate(
-        { subscriptionId: subscriptionId }, 
-        { 
-          plan: 'free', 
+        { subscriptionId },
+        {
           subscriptionStatus: 'canceled',
-          credits: 10,
-          planEndsAt: null
-          // Keep the paddleCustomerId in case they resubscribe later
+          planEndsAt:         accessEndsAt, // ← keep this! don't set to null
+          // plan stays 'pro' — we downgrade via a scheduled job or on next login
+          // once Date.now() > planEndsAt (handled in creditManager / get-user route)
         }
       );
-      console.log(`📉 Subscription Canceled: ${subscriptionId}`);
+      console.log(`📉 Subscription canceled: ${subscriptionId} — access until ${accessEndsAt}`);
+    }
+
+    // ── 4. Past due (payment failed) ─────────────────────────────────────────
+    if (eventType === 'subscription.past_due' || status === 'past_due') {
+      await User.findOneAndUpdate(
+        { subscriptionId },
+        { subscriptionStatus: 'past_due' }
+        // Don't downgrade yet — Paddle will retry. Downgrade only on 'canceled'.
+      );
+      console.log(`⚠️  Subscription past_due: ${subscriptionId}`);
     }
 
     res.json({ success: true });
@@ -71,4 +102,5 @@ router.post('/webhook', async (req, res) => {
     res.status(400).send("Invalid Signature");
   }
 });
+
 module.exports = router;

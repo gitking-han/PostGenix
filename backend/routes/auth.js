@@ -14,7 +14,7 @@ const Post = require('../models/Post');
 const Conversation = require('../models/Conversation');
 const Settings = require('../models/Settings');
 const { checkAndResetCredits } = require('../utils/creditManager');
-
+const { checkAndDowngradeCanceled } = require('../utils/creditManager');
 const JWT_SECRET = process.env.JWT_SECRET;
 
 // ==========================
@@ -299,6 +299,7 @@ router.get('/get-user', fetchuser, async (req, res) => {
     if (!user) return res.status(404).json({ message: "User not found" });
 
     user = await checkAndResetCredits(user);
+    user = await checkAndDowngradeCanceled(user);
 
     // The spotlight only shows if they haven't completed the profile 
     // AND they haven't clicked "Got it" yet.

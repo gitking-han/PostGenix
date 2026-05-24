@@ -22,5 +22,19 @@ const checkAndResetCredits = async (user) => {
   
   return user;
 };
-
-module.exports = { checkAndResetCredits };
+const checkAndDowngradeCanceled = async (user) => {
+  if (
+    user.plan === 'pro' &&
+    user.subscriptionStatus === 'canceled' &&
+    user.planEndsAt &&
+    new Date() > new Date(user.planEndsAt)
+  ) {
+    user.plan     = 'free';
+    user.credits  = Math.min(user.credits, 10); // cap to free limit
+    await user.save();
+    console.log(`LOG: Auto-downgraded user ${user._id} to free (grace period expired)`);
+  }
+  return user;
+};
+ 
+module.exports = { checkAndDowngradeCanceled, checkAndResetCredits };
