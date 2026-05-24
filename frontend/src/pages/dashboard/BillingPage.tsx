@@ -74,7 +74,7 @@ export default function BillingPage() {
     const priceId = isYearly
       ? import.meta.env.VITE_PADDLE_PRO_YEARLY_PRICE_ID
       : import.meta.env.VITE_PADDLE_PRO_PRICE_ID;
-
+     
     window.Paddle.Checkout.open({
       settings: { displayMode: "overlay", theme: "light", locale: "en" },
       items: [{ priceId, quantity: 1 }],
