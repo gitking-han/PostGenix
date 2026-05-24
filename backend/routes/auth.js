@@ -85,7 +85,7 @@ router.post('/createuser', [
       email: req.body.email,
       password: secPass
     });
-
+    
     // --- NEW PROFILE LOGIC START ---
 
     // 2. Prepare Name and Username
