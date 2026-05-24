@@ -55,7 +55,7 @@ export default function BillingPage() {
   const usedCredits     = Math.max(0, 10 - (userData?.credits ?? 10));
   const creditPct       = isPro ? 100 : (usedCredits / 10) * 100;
 
-  const monthlyPrice    = 2000;  // PKR
+  const monthlyPrice    = 7.17;  // PKR
   const yearlyPrice     = Math.round(monthlyPrice * 12 * 0.9); // 10% off
   const displayedPrice  = isYearly ? Math.round(yearlyPrice / 12) : monthlyPrice;
   const displayedPeriod = isYearly ? "/mo (billed yearly)" : "/month";
@@ -218,12 +218,12 @@ export default function BillingPage() {
 
           {/* Price */}
           <div className="text-3xl font-bold text-foreground mb-1">
-            PKR {displayedPrice.toLocaleString()}
+            USD {displayedPrice.toLocaleString()}
             <span className="text-base font-normal text-muted-foreground">{displayedPeriod}</span>
           </div>
           {isYearly && !isPro && (
             <p className="text-xs text-muted-foreground mb-4">
-              PKR {yearlyPrice.toLocaleString()} billed once a year
+              USD {yearlyPrice.toLocaleString()} billed once a year
             </p>
           )}
 
