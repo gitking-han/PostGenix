@@ -85,7 +85,7 @@ router.post('/createuser', [
       email: req.body.email,
       password: secPass
     });
-    
+
     // --- NEW PROFILE LOGIC START ---
 
     // 2. Prepare Name and Username
@@ -324,8 +324,17 @@ router.get('/get-user', fetchuser, async (req, res) => {
  */
 router.get('/linkedin/connect', fetchuser, (req, res) => {
   const userId = req.user.id.toString();
+  const redirect = req.query.redirect || "/dashboard/write";
+  const state = Buffer.from(
+    JSON.stringify({
+      userId,
+      redirect
+    })
+  ).toString("base64");
+
   const redirectUri = `${process.env.BASE_URL}/api/auth/linkedin/callback`;
   const scope = "openid profile email w_member_social";
+
 
   const authUrl = `https://www.linkedin.com/oauth/v2/authorization?` +
     `response_type=code&` +
@@ -392,10 +401,18 @@ router.get('/linkedin/callback', async (req, res) => {
     const personUrn = `urn:li:person:${sub}`;
 
     if (state) {
-      // SCENARIO: AGENT CONNECTION (User was already logged in)
-      console.log("LOG: Updating existing user with LinkedIn Keys. ID:", state);
 
-      const updatedUser = await User.findByIdAndUpdate(state, {
+      // decode state object
+      const decodedState = JSON.parse(
+        Buffer.from(state, "base64").toString()
+      );
+
+      const userId = decodedState.userId;
+      const redirect = decodedState.redirect || "/dashboard/write";
+
+      console.log("LOG: Updating existing user with LinkedIn Keys. ID:", userId);
+
+      const updatedUser = await User.findByIdAndUpdate(userId, {
         $set: {
           'linkedin.accessToken': accessToken,
           'linkedin.personUrn': personUrn,
@@ -410,7 +427,9 @@ router.get('/linkedin/callback', async (req, res) => {
         console.error("LOG: User ID from state not found in database.");
       }
 
-      return res.redirect(`${process.env.FRONTEND_URL}/dashboard/settings?linkedin=connected`);
+      return res.redirect(
+        `${process.env.FRONTEND_URL}${redirect}&linkedin=connected`
+      );
 
     } else {
       // SCENARIO: STANDARD LOGIN

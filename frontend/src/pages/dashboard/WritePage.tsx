@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChatSidebar } from "./ChatSidebar";
+import { useSearchParams } from "react-router-dom";
 
 /* ─── Config & Types ─────────────────────────────────────────────────────── */
 const postTypes = ["Short", "Story", "List", "Hot Take", "Career"];
@@ -54,7 +55,7 @@ export default function WritePage() {
   const [isLimitReached, setIsLimitReached] = useState(false);
   const [isLinkedInConnected, setIsLinkedInConnected] = useState(false);
   const [isAgentActing, setIsAgentActing] = useState<string | null>(null);
-
+  const [searchParams] = useSearchParams();
   /* ── Voice Mode state ───────────────────────────────────────────────────── */
   const [voiceModeEnabled, setVoiceModeEnabled] = useState(false);
   const [voiceFingerprint, setVoiceFingerprint] = useState<any>(null);
@@ -67,6 +68,14 @@ export default function WritePage() {
   const API_BASE = `${import.meta.env.VITE_API_URL}/api/posts`;
   const API_CHAT = `${import.meta.env.VITE_API_URL}/api/chats`;
   const API_AI = `${import.meta.env.VITE_API_URL}/api/ai`;
+
+  useEffect(() => {
+  const chatId = searchParams.get("chat");
+
+  if (chatId && chatId !== "new") {
+    handleSelectChat(chatId);
+  }
+}, []);
 
   /* ── Mobile detection ───────────────────────────────────────────────────── */
   useEffect(() => {
@@ -429,10 +438,19 @@ export default function WritePage() {
   };
 
   const handleConnectLinkedIn = () => {
-    window.location.href =
-      `${import.meta.env.VITE_API_URL}/api/auth/linkedin/connect?token=${localStorage.getItem("authToken")}`;
-  };
+    const token = localStorage.getItem("authToken");
 
+    // current opened chat
+    const chatId = currentChatId || "new";
+
+    // where user should return after OAuth
+    const redirect = `/dashboard/write?chat=${chatId}`;
+
+    window.location.href =
+      `${import.meta.env.VITE_API_URL}/api/auth/linkedin/connect` +
+      `?token=${token}` +
+      `&redirect=${encodeURIComponent(redirect)}`;
+  };
   /* ─── Render ─────────────────────────────────────────────────────────────── */
   return (
     <DashboardLayout>

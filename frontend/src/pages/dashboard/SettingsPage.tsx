@@ -29,62 +29,82 @@ const jsonHeaders = () => ({ ...authHeaders(), "Content-Type": "application/json
 
 // ─── Industry options ──────────────────────────────────────────────────────────
 const INDUSTRIES = [
-  { value: "saas",       label: "B2B SaaS" },
-  { value: "fintech",    label: "Fintech" },
-  { value: "ecommerce",  label: "E-Commerce" },
-  { value: "marketing",  label: "Marketing & Agencies" },
+  { value: "saas", label: "B2B SaaS" },
+  { value: "fintech", label: "Fintech" },
+  { value: "ecommerce", label: "E-Commerce" },
+  { value: "marketing", label: "Marketing & Agencies" },
   { value: "consulting", label: "Consulting" },
   { value: "healthcare", label: "Healthcare" },
-  { value: "edtech",     label: "EdTech" },
-  { value: "ai",         label: "AI & ML" },
-  { value: "web3",       label: "Web3 & Crypto" },
-  { value: "creator",    label: "Creator Economy" },
-  { value: "hr",         label: "HR & Recruiting" },
-  { value: "other",      label: "Other" },
+  { value: "edtech", label: "EdTech" },
+  { value: "ai", label: "AI & ML" },
+  { value: "web3", label: "Web3 & Crypto" },
+  { value: "creator", label: "Creator Economy" },
+  { value: "hr", label: "HR & Recruiting" },
+  { value: "other", label: "Other" },
 ];
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function SettingsPage() {
   const { toast } = useToast();
-  const [loading,               setLoading]               = useState(true);
-  const [saving,                setSaving]                = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [isDisconnectModalOpen, setIsDisconnectModalOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("brand-kit");
+
+
 
   const [settings, setSettings] = useState({
     brandKit: {
-      mission:        "",
+      mission: "",
       targetAudience: "",
-      industry:       "saas",
+      industry: "saas",
       // FIX 4: terminology is now shown in the UI so users can actually set it
-      terminology:    "",
+      terminology: "",
     },
     modelConfig: {
       highReasoning: true,
-      temperature:   0.7,
-      maxTokens:     "medium",
+      temperature: 0.7,
+      maxTokens: "medium",
       negativePrompt: "",
     },
     linkedin: {
-      isConnected:  false,
-      profileName:  "",
+      isConnected: false,
+      profileName: "",
     },
   });
 
   // FIX 2: password handler is a plain click handler — no FormEvent needed
   const [passwords, setPasswords] = useState({
     currentPassword: "",
-    newPassword:     "",
+    newPassword: "",
     confirmPassword: "",
   });
 
   // ── Fetch settings + LinkedIn status on mount ────────────────────────────────
   useEffect(() => {
-    // Show toast if redirected back after LinkedIn OAuth
     const params = new URLSearchParams(window.location.search);
-    if (params.get("linkedin") === "connected") {
-      toast({ title: "LinkedIn Connected!", description: "PostGenix can now draft posts for you." });
-      window.history.replaceState({}, document.title, window.location.pathname);
+
+    // Open requested tab
+    const tab = params.get("tab");
+
+    if (tab) {
+      setActiveTab(tab);
     }
+
+    // LinkedIn success toast
+    if (params.get("linkedin") === "connected") {
+      toast({
+        title: "LinkedIn Connected!",
+        description: "PostGenix can now draft posts for you."
+      });
+    }
+
+    // Clean URL
+    window.history.replaceState(
+      {},
+      document.title,
+      window.location.pathname
+    );
   }, []);
 
   useEffect(() => {
@@ -92,29 +112,29 @@ export default function SettingsPage() {
       try {
         const [settingsRes, userRes] = await Promise.all([
           fetch(API("/api/settings/fetch"), { headers: authHeaders() }),
-          fetch(API("/api/auth/get-user"),  { headers: authHeaders() }),
+          fetch(API("/api/auth/get-user"), { headers: authHeaders() }),
         ]);
 
         const settingsData = await settingsRes.json();
-        const userData     = await userRes.json();
+        const userData = await userRes.json();
 
         if (settingsRes.ok && userRes.ok) {
           setSettings({
             brandKit: {
-              mission:        settingsData.brandKit?.mission        || "",
+              mission: settingsData.brandKit?.mission || "",
               targetAudience: settingsData.brandKit?.targetAudience || "",
-              industry:       settingsData.brandKit?.industry       || "saas",
-              terminology:    settingsData.brandKit?.terminology    || "",
+              industry: settingsData.brandKit?.industry || "saas",
+              terminology: settingsData.brandKit?.terminology || "",
             },
             modelConfig: {
-              highReasoning:  settingsData.modelConfig?.highReasoning  ?? true,
-              temperature:    settingsData.modelConfig?.temperature     ?? 0.7,
-              maxTokens:      settingsData.modelConfig?.maxTokens       || "medium",
-              negativePrompt: settingsData.modelConfig?.negativePrompt  || "",
+              highReasoning: settingsData.modelConfig?.highReasoning ?? true,
+              temperature: settingsData.modelConfig?.temperature ?? 0.7,
+              maxTokens: settingsData.modelConfig?.maxTokens || "medium",
+              negativePrompt: settingsData.modelConfig?.negativePrompt || "",
             },
             linkedin: {
-              isConnected: userData.linkedin?.isConnected  || false,
-              profileName: userData.linkedin?.profileName  || "",
+              isConnected: userData.linkedin?.isConnected || false,
+              profileName: userData.linkedin?.profileName || "",
             },
           });
         }
@@ -132,9 +152,9 @@ export default function SettingsPage() {
     setSaving(true);
     try {
       const response = await fetch(API("/api/settings/update"), {
-        method:  "PUT",
+        method: "PUT",
         headers: jsonHeaders(),
-        body:    JSON.stringify({ type: section, data: settings[section] }),
+        body: JSON.stringify({ type: section, data: settings[section] }),
       });
 
       if (response.ok) {
@@ -152,14 +172,21 @@ export default function SettingsPage() {
   // ── LinkedIn connect / disconnect ────────────────────────────────────────────
   const handleConnectLinkedIn = () => {
     const token = localStorage.getItem("authToken");
-    window.location.href = `${import.meta.env.VITE_API_URL}/api/auth/linkedin/connect?token=${token}`;
+
+    const redirect =
+      "/dashboard/settings?tab=integrations";
+
+    window.location.href =
+      `${import.meta.env.VITE_API_URL}/api/auth/linkedin/connect` +
+      `?token=${token}` +
+      `&redirect=${encodeURIComponent(redirect)}`;
   };
 
   const handleDisconnectLinkedIn = async () => {
     setSaving(true);
     try {
       const res = await fetch(API("/api/auth/linkedin/disconnect"), {
-        method:  "PUT",
+        method: "PUT",
         headers: authHeaders(),
       });
       if (res.ok) {
@@ -187,11 +214,11 @@ export default function SettingsPage() {
     setSaving(true);
     try {
       const res = await fetch(API("/api/auth/update-password"), {
-        method:  "PUT",
+        method: "PUT",
         headers: jsonHeaders(),
-        body:    JSON.stringify({
+        body: JSON.stringify({
           currentPassword: passwords.currentPassword,
-          newPassword:     passwords.newPassword,
+          newPassword: passwords.newPassword,
         }),
       });
       const data = await res.json();
@@ -214,7 +241,7 @@ export default function SettingsPage() {
     setSaving(true);
     try {
       const res = await fetch(API("/api/auth/delete-account"), {
-        method:  "DELETE",
+        method: "DELETE",
         headers: authHeaders(),
       });
       if (res.ok) {
@@ -250,12 +277,16 @@ export default function SettingsPage() {
           <p className="text-muted-foreground mt-1">Configure your AI workspace parameters.</p>
         </header>
 
-        <Tabs defaultValue="brand-kit" className="space-y-6">
+        <Tabs
+          value={activeTab}
+          onValueChange={setActiveTab}
+          className="space-y-6"
+        >
           <TabsList className="bg-muted/50 p-1 border overflow-x-auto justify-start h-auto flex-wrap">
-            <TabsTrigger value="brand-kit"    className="gap-2 py-2"><Sparkles className="w-4 h-4" /> AI Brand Kit</TabsTrigger>
-            <TabsTrigger value="model-config" className="gap-2 py-2"><Cpu     className="w-4 h-4" /> Model Config</TabsTrigger>
+            <TabsTrigger value="brand-kit" className="gap-2 py-2"><Sparkles className="w-4 h-4" /> AI Brand Kit</TabsTrigger>
+            <TabsTrigger value="model-config" className="gap-2 py-2"><Cpu className="w-4 h-4" /> Model Config</TabsTrigger>
             <TabsTrigger value="integrations" className="gap-2 py-2 text-xs font-bold uppercase tracking-wider"><Link2 className="w-4 h-4" /> Agentic Tools</TabsTrigger>
-            <TabsTrigger value="security"     className="gap-2 py-2"><ShieldCheck className="w-4 h-4" /> Security</TabsTrigger>
+            <TabsTrigger value="security" className="gap-2 py-2"><ShieldCheck className="w-4 h-4" /> Security</TabsTrigger>
           </TabsList>
 
           {/* ── Brand Kit ───────────────────────────────────────────────────── */}
@@ -586,7 +617,7 @@ export default function SettingsPage() {
               </AlertDialog>
             </div>
           </TabsContent>
-          
+
 
         </Tabs>
       </div>
