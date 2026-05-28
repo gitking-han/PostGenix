@@ -18,7 +18,8 @@ import {
   ChevronLeft,
   ChevronRight,
   User,
-  Mic 
+  Mic,
+  BarChart3
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -32,6 +33,7 @@ const sidebarLinks = [
   { name: "Settings", href: "/dashboard/settings", icon: Settings },
   { name: "Billing", href: "/dashboard/billing", icon: CreditCard },
   { name: "Voice", href: "/dashboard/voice", icon: Mic },
+  { name: "Analytics", href: "/dashboard/analytics", icon: BarChart3 },
 
 ];
 

@@ -1,0 +1,151 @@
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  .wrap { padding: 1rem 0; font-size: 13px; color: var(--color-text-primary); }
+  .page-row { display: grid; grid-template-columns: 160px 80px 1fr; gap: 0; border-bottom: 0.5px solid var(--color-border-tertiary); align-items: stretch; }
+  .page-row:first-child { border-top: 0.5px solid var(--color-border-tertiary); }
+  .cell { padding: 12px 14px; }
+  .page-name { font-weight: 500; font-size: 13px; color: var(--color-text-primary); display: flex; align-items: center; gap: 8px; }
+  .page-url { font-size: 11px; color: var(--color-text-tertiary); margin-top: 2px; font-family: var(--font-mono); }
+  .badge { display: inline-block; font-size: 10px; font-weight: 500; padding: 2px 7px; border-radius: 20px; white-space: nowrap; }
+  .badge-keep { background: #EAF3DE; color: #3B6D11; }
+  .badge-modify { background: #FAEEDA; color: #854F0B; }
+  .badge-new { background: #EEEDFE; color: #3C3489; }
+  .badge-wire { background: #E6F1FB; color: #0C447C; }
+  .detail { font-size: 12px; color: var(--color-text-secondary); line-height: 1.6; }
+  .detail strong { color: var(--color-text-primary); font-weight: 500; }
+  .header-row { display: grid; grid-template-columns: 160px 80px 1fr; gap: 0; padding: 8px 14px; background: var(--color-background-secondary); border-radius: 8px 8px 0 0; margin-bottom: 0; }
+  .header-row span { font-size: 11px; font-weight: 500; color: var(--color-text-tertiary); text-transform: uppercase; letter-spacing: 0.05em; }
+  .legend { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+  .section-label { font-size: 11px; font-weight: 500; color: var(--color-text-tertiary); text-transform: uppercase; letter-spacing: 0.05em; padding: 10px 14px 4px; background: var(--color-background-secondary); }
+</style>
+
+<div class="wrap">
+  <div class="legend">
+    <span class="badge badge-keep">Keep as-is</span>
+    <span class="badge badge-modify">Modify existing</span>
+    <span class="badge badge-new">New page</span>
+    <span class="badge badge-wire">Wire up backend</span>
+  </div>
+
+  <div style="border: 0.5px solid var(--color-border-tertiary); border-radius: 10px; overflow: hidden;">
+    <div class="header-row">
+      <span>Page</span><span>Action</span><span>What exactly changes</span>
+    </div>
+
+    <div class="section-label">Existing pages</div>
+
+    <div class="page-row">
+      <div class="cell">
+        <div class="page-name">Dashboard</div>
+        <div class="page-url">/dashboard</div>
+      </div>
+      <div class="cell" style="display:flex;align-items:center"><span class="badge badge-modify">Modify</span></div>
+      <div class="cell detail">
+        <strong>Replace metric cards:</strong> swap "Posts Created / Portfolio Views / AI Credits" → "Brand Score / Posts Published / Avg Engagement / AI Credits". Add <strong>Brand Drift Alert banner</strong> between header and metrics (only shows when drift detected). Replace the two quick-action buttons section with <strong>Brand Intelligence bars + What's Working insights</strong>. Recent Posts table stays but add engagement column. No new page — same file, same route.
+      </div>
+    </div>
+
+    <div class="page-row">
+      <div class="cell">
+        <div class="page-name">Write</div>
+        <div class="page-url">/dashboard/write</div>
+      </div>
+      <div class="cell" style="display:flex;align-items:center"><span class="badge badge-modify">Modify</span></div>
+      <div class="cell detail">
+        <strong>Already 80% right.</strong> Profile Lab + Nova Insights stays. Add one thing: a <strong>"Voice Mode" toggle</strong> in the right panel — when on, generation uses the stored Voice Fingerprint instead of generic prompting. Add a small indicator "Writing as: Hanzala (Direct, story-led)" above the text area so users know their voice is active. The post format pills (Short, Story, List…) stay exactly as-is.
+      </div>
+    </div>
+
+    <div class="page-row">
+      <div class="cell">
+        <div class="page-name">Posts</div>
+        <div class="page-url">/dashboard/posts</div>
+      </div>
+      <div class="cell" style="display:flex;align-items:center"><span class="badge badge-modify">Modify</span></div>
+      <div class="cell detail">
+        <strong>Add 3 columns to the table:</strong> Impressions, Engagement %, Post Type. Add a filter bar (All / Hook / Story / List / Question). Add a <strong>performance badge</strong> per row (green = above avg, red = below). The table is currently just Preview + Style + Date + Actions — these additions make it actually useful for brand intelligence.
+      </div>
+    </div>
+
+    <div class="page-row">
+      <div class="cell">
+        <div class="page-name">Portfolio</div>
+        <div class="page-url">/dashboard/portfolio</div>
+      </div>
+      <div class="cell" style="display:flex;align-items:center"><span class="badge badge-keep">Keep</span></div>
+      <div class="cell detail">
+        <strong>Nothing changes here.</strong> Portfolio URL, manage posts, public/private toggle — all fine. This page is done. The only future addition (v2) would be a custom domain option, but that's not now.
+      </div>
+    </div>
+
+    <div class="page-row">
+      <div class="cell">
+        <div class="page-name">Profile</div>
+        <div class="page-url">/dashboard/profile</div>
+      </div>
+      <div class="cell" style="display:flex;align-items:center"><span class="badge badge-modify">Modify</span></div>
+      <div class="cell detail">
+        <strong>Add two fields below the About section:</strong> "Your Niche" (text input, e.g. "LinkedIn growth for B2B founders") and "Brand Keywords" (tag input, e.g. storytelling, data-driven). These feed directly into the Brand Drift detection. Also change "Niche: Not set" from a grey label into a clickable prompt that opens an inline edit. The gradient banner stays — it looks good.
+      </div>
+    </div>
+
+    <div class="page-row">
+      <div class="cell">
+        <div class="page-name">Settings — Brand Kit</div>
+        <div class="page-url">/dashboard/settings</div>
+      </div>
+      <div class="cell" style="display:flex;align-items:center"><span class="badge badge-wire">Wire up</span></div>
+      <div class="cell detail">
+        <strong>Already built, just not wired.</strong> The AI Brand Kit tab (Core Mission, Target Audience, Industry) is exactly where the Voice Fingerprint result should be stored and displayed. Right now it's a manual text box. Wire it so when the fingerprint analysis runs, it <strong>auto-populates</strong> this tab with the result. User can then edit it. This tab becomes the single source of truth for all generation.
+      </div>
+    </div>
+
+    <div class="page-row">
+      <div class="cell">
+        <div class="page-name">Settings — Model Config</div>
+        <div class="page-url">/dashboard/settings</div>
+      </div>
+      <div class="cell" style="display:flex;align-items:center"><span class="badge badge-keep">Keep</span></div>
+      <div class="cell detail">
+        <strong>Keep as-is.</strong> High-Reasoning Mode, Creativity slider, Global Negative Prompt — this is actually a power-user feature that differentiates you. Don't touch it. Maybe rename "Global Negative Prompt" to "Things to never write about" for non-technical users.
+      </div>
+    </div>
+
+    <div class="page-row">
+      <div class="cell">
+        <div class="page-name">Billing</div>
+        <div class="page-url">/dashboard/billing</div>
+      </div>
+      <div class="cell" style="display:flex;align-items:center"><span class="badge badge-modify">Modify</span></div>
+      <div class="cell detail">
+        <strong>Update the Pro plan features list.</strong> Currently: "Unlimited AI posts / Advanced portfolio features / Early access to LinkedIn integration." Change to include: Voice Fingerprint, Brand Drift Alerts, Performance Analytics, Content Gap Map. These are now your real value props. The pricing and layout stays the same.
+      </div>
+    </div>
+
+    <div class="section-label">New pages to build</div>
+
+    <div class="page-row">
+      <div class="cell">
+        <div class="page-name">Voice</div>
+        <div class="page-url">/dashboard/voice</div>
+      </div>
+      <div class="cell" style="display:flex;align-items:center"><span class="badge badge-new">New page</span></div>
+      <div class="cell detail">
+        <strong>New sidebar item between Write and Posts.</strong> Shows the Voice Fingerprint result: Tone tags (Direct, Story-led, Data-driven), Writing patterns ("You start 80% of posts with a bold claim"), Words you overuse, Words your audience responds to. Has a "Regenerate Fingerprint" button that re-runs the analysis on latest posts. No complex UI — one card, a few tag groups, one action button.
+      </div>
+    </div>
+
+    <div class="page-row">
+      <div class="cell">
+        <div class="page-name">Analytics</div>
+        <div class="page-url">/dashboard/analytics</div>
+      </div>
+      <div class="cell" style="display:flex;align-items:center"><span class="badge badge-new">New page</span></div>
+      <div class="cell detail">
+        <strong>New sidebar item below Posts.</strong> Three sections: (1) <strong>Performance over time</strong> — engagement rate chart by week. (2) <strong>Post type breakdown</strong> — which format (Hook/Story/List/Question) performs best for this specific user. (3) <strong>Content Gap Map</strong> — topics top creators in their niche post about that this user hasn't touched. This is the page that makes users go "I need to keep this tool."
+      </div>
+    </div>
+
+  </div>
+</div>
