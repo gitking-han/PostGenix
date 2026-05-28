@@ -239,10 +239,10 @@ export default function BillingPage() {
 
           {/* Price */}
           <div className="text-3xl font-bold text-foreground mb-1">
-            USD {displayedPrice.toLocaleString()}
+            USD {yearlyPrice.toLocaleString()}
             <span className="text-base font-normal text-muted-foreground">{displayedPeriod}</span>
           </div>
-          {isYearly && !isPro && (
+          {isYearly && isPro && (
             <p className="text-xs text-muted-foreground mb-4">
               USD {yearlyPrice.toLocaleString()} billed once a year
             </p>
