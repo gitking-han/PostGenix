@@ -37,6 +37,7 @@ import NotFound from "./pages/NotFound";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ViewPost from "./pages/dashboard/ViewPost";
+import VoicePage from "./pages/dashboard/VoicePage";
 import { useEffect } from "react";
 /**
  * UTILITY: Check if the JWT token is expired
@@ -164,6 +165,8 @@ useEffect(() => {
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />
               <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
               <Route path="/dashboard/posts/:id" element={<ProtectedRoute><ViewPost /></ProtectedRoute>} />
+              <Route path="/dashboard/voice" element={<ProtectedRoute><VoicePage /></ProtectedRoute>} />
+
 
               {/* --- 404 Route --- */}
               <Route path="*" element={<NotFound />} />

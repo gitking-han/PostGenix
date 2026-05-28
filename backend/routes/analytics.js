@@ -541,6 +541,240 @@ router.get("/engagement", fetchuser, ensurePro, async (req, res) => {
   }
 });
 
+// ═══════════════════════════════════════════════════════════════════════════
+//  ADD THESE 3 ROUTES TO analytics.js BEFORE module.exports = router
+//  Also add `const axios = require('axios');` at the top if not already there.
+// ═══════════════════════════════════════════════════════════════════════════
+
+// ─── Route 6: Weekly Performance ────────────────────────────────────────────
+/**
+ * @route   GET /api/analytics/weekly-performance
+ * @desc    Returns last 8 weeks of posting activity + avg engagement per week.
+ *          Used for the line chart on the Analytics page.
+ * @access  Private
+ */
+router.get("/weekly-performance", fetchuser, async (req, res) => {
+  try {
+    const posts = await Post.find({ user: req.user.id }).sort({ createdAt: -1 });
+
+    // Build 8-week buckets going backwards from today
+    const weeks = [];
+    const now   = new Date();
+
+    for (let i = 7; i >= 0; i--) {
+      const weekStart = new Date(now);
+      weekStart.setDate(now.getDate() - i * 7 - 6);
+      weekStart.setHours(0, 0, 0, 0);
+
+      const weekEnd = new Date(now);
+      weekEnd.setDate(now.getDate() - i * 7);
+      weekEnd.setHours(23, 59, 59, 999);
+
+      const weekPosts = posts.filter((p) => {
+        const d = new Date(p.createdAt);
+        return d >= weekStart && d <= weekEnd;
+      });
+
+      // Engagement rate per post (published only)
+      const engagements = weekPosts
+        .filter((p) => p.linkedinPostId)
+        .map((p) => {
+          const likes      = p.engagement?.likes      ?? 0;
+          const comments   = p.engagement?.comments   ?? 0;
+          const impressions = p.engagement?.impressions ?? 0;
+          const denom      = impressions > 0 ? impressions : 500;
+          return ((likes + comments) / denom) * 100;
+        });
+
+      const avgEng =
+        engagements.length > 0
+          ? parseFloat(
+              (engagements.reduce((a, b) => a + b, 0) / engagements.length).toFixed(1)
+            )
+          : 0;
+
+      weeks.push({
+        week:           weekStart.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+        posts:          weekPosts.length,
+        published:      weekPosts.filter((p) => p.linkedinPostId).length,
+        avgEngagement:  avgEng,
+      });
+    }
+
+    res.json({ weeks });
+  } catch (err) {
+    console.error("weekly-performance error:", err.message);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+});
+
+// ─── Route 7: Post Type Performance ─────────────────────────────────────────
+/**
+ * @route   GET /api/analytics/post-type-performance
+ * @desc    Returns breakdown by post type: count, published count, avg engagement.
+ *          Used for the bar chart on the Analytics page.
+ * @access  Private
+ */
+router.get("/post-type-performance", fetchuser, async (req, res) => {
+  try {
+    const posts = await Post.find({ user: req.user.id });
+
+    const ALL_TYPES  = ["Short", "Story", "List", "Hot Take", "Career"];
+    const breakdown  = [];
+
+    for (const type of ALL_TYPES) {
+      const typePosts    = posts.filter((p) => p.postType === type);
+      const publishedOnes = typePosts.filter((p) => p.linkedinPostId);
+
+      const engagements = publishedOnes.map((p) => {
+        const likes       = p.engagement?.likes       ?? 0;
+        const comments    = p.engagement?.comments    ?? 0;
+        const impressions = p.engagement?.impressions ?? 0;
+        const denom       = impressions > 0 ? impressions : 500;
+        return ((likes + comments) / denom) * 100;
+      });
+
+      const avgEng =
+        engagements.length > 0
+          ? parseFloat(
+              (engagements.reduce((a, b) => a + b, 0) / engagements.length).toFixed(1)
+            )
+          : 0;
+
+      breakdown.push({
+        postType:       type,
+        count:          typePosts.length,
+        publishedCount: publishedOnes.length,
+        avgEngagement:  avgEng,
+        // Percentage of total posts
+        percentage:
+          posts.length > 0
+            ? Math.round((typePosts.length / posts.length) * 100)
+            : 0,
+      });
+    }
+
+    // Sort by count descending
+    breakdown.sort((a, b) => b.count - a.count);
+
+    res.json({ breakdown, totalPosts: posts.length });
+  } catch (err) {
+    console.error("post-type-performance error:", err.message);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+});
+
+// ─── Route 8: Content Gaps ───────────────────────────────────────────────────
+/**
+ * @route   GET /api/analytics/content-gaps
+ * @desc    Uses AI to identify topics the user hasn't covered in their niche.
+ *          Cached on User document for 48h (contentGapsCache field).
+ * @access  Private
+ *
+ * REQUIRES: Add contentGapsCache to User model:
+ *   contentGapsCache: {
+ *     gaps:      [{ topic: String, reason: String, difficulty: String }],
+ *     updatedAt: { type: Date, default: null },
+ *   }
+ */
+router.get("/content-gaps", fetchuser, async (req, res) => {
+  try {
+    const [user, profileDoc, recentPosts] = await Promise.all([
+      User.findById(req.user.id),
+      Profile.findOne({ userId: req.user.id }),
+      Post.find({ user: req.user.id }).sort({ createdAt: -1 }).limit(30),
+    ]);
+
+    const niche = profileDoc?.preferences?.niche || "";
+
+    // If no niche set, return prompt to set it
+    if (!niche) {
+      return res.json({
+        gaps: [],
+        reason: "no_niche_set",
+        message: "Set your niche in Profile to unlock Content Gap analysis.",
+      });
+    }
+
+    // ── Cache check: 48-hour cache ────────────────────────────────────────
+    const cache    = user.contentGapsCache;
+    const cacheAge = cache?.updatedAt
+      ? (Date.now() - new Date(cache.updatedAt).getTime()) / 1000 / 60 / 60
+      : 999;
+
+    if (cache?.gaps?.length > 0 && cacheAge < 48) {
+      return res.json({ gaps: cache.gaps, fromCache: true });
+    }
+
+    // ── Build post topics list ────────────────────────────────────────────
+    const topicsList = recentPosts
+      .map((p, i) => `${i + 1}. "${p.prompt}"`)
+      .join("\n");
+
+    // ── AI prompt ─────────────────────────────────────────────────────────
+    const prompt = `You are a LinkedIn content strategist.
+
+A creator's niche is: "${niche}"
+
+Here are the topics they have already written about (last 30 posts):
+${topicsList || "No posts yet."}
+
+Based on their niche, identify 5 high-value content topics they have NOT covered yet.
+These should be topics that perform well in their niche and would resonate with their audience.
+
+Respond ONLY with valid JSON — no markdown, no explanation:
+[
+  {
+    "topic": "Short topic title (5-8 words)",
+    "reason": "One sentence explaining why this topic would perform well for their niche",
+    "difficulty": "Easy" | "Medium" | "Hard"
+  }
+]`;
+
+    const aiRes = await anthropic.messages.create({
+      model:      "claude-sonnet-4-20250514",
+      max_tokens: 800,
+      messages:   [{ role: "user", content: prompt }],
+    });
+
+    const rawText = aiRes.content
+      .filter((b) => b.type === "text")
+      .map((b) => b.text)
+      .join("");
+
+    let gaps;
+    try {
+      gaps = JSON.parse(rawText.replace(/```json|```/g, "").trim());
+    } catch {
+      return res.status(500).json({ message: "Failed to parse content gaps. Try again." });
+    }
+
+    // ── Cache result ──────────────────────────────────────────────────────
+    await User.findByIdAndUpdate(req.user.id, {
+      $set: {
+        "contentGapsCache.gaps":      gaps,
+        "contentGapsCache.updatedAt": new Date(),
+      },
+    });
+
+    res.json({ gaps, fromCache: false });
+  } catch (err) {
+    console.error("content-gaps error:", err.message);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+});
+
+// ─── ADD TO User model (models/User.js): ────────────────────────────────────
+//
+//   contentGapsCache: {
+//     gaps: [{
+//       topic:      { type: String },
+//       reason:     { type: String },
+//       difficulty: { type: String },
+//     }],
+//     updatedAt: { type: Date, default: null },
+//   },
+
 module.exports = router;
 
 /*

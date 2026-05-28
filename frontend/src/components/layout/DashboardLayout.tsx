@@ -17,7 +17,8 @@ import {
   Sun,
   ChevronLeft,
   ChevronRight,
-  User
+  User,
+  Mic 
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -30,6 +31,8 @@ const sidebarLinks = [
   { name: "Profile", href: "/dashboard/profile", icon: User },
   { name: "Settings", href: "/dashboard/settings", icon: Settings },
   { name: "Billing", href: "/dashboard/billing", icon: CreditCard },
+  { name: "Voice", href: "/dashboard/voice", icon: Mic },
+
 ];
 
 interface DashboardLayoutProps {

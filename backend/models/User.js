@@ -74,6 +74,15 @@ const UserSchema = new mongoose.Schema({
   // PASSWORD RESET FIELDS
   resetPasswordToken: { type: String },
   resetPasswordExpires: { type: Date },
+
+  contentGapsCache: {
+    gaps: [{
+      topic:      { type: String },
+      reason:     { type: String },
+      difficulty: { type: String },
+    }],
+    updatedAt: { type: Date, default: null },
+  },
 });
 
 const User = mongoose.model("user", UserSchema);
