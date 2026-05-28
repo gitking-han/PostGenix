@@ -28,9 +28,9 @@ const FREE_FEATURES = [
 ];
 
 export default function BillingPage() {
-  const [userData,  setUserData]  = useState<any>(null);
+  const [userData, setUserData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isYearly,  setIsYearly]  = useState(false); // yearly billing toggle
+  const [isYearly, setIsYearly] = useState(false); // yearly billing toggle
 
   // ── Fetch user on mount ────────────────────────────────────────────────────
   useEffect(() => {
@@ -51,9 +51,9 @@ export default function BillingPage() {
   }, []);
 
   // ── Derived values ─────────────────────────────────────────────────────────
-  const isPro           = userData?.plan === "pro";
-  const usedCredits     = Math.max(0, 10 - (userData?.credits ?? 10));
-  const creditPct       = isPro ? 100 : (usedCredits / 10) * 100;
+  const isPro = userData?.plan === "pro";
+  const usedCredits = Math.max(0, 10 - (userData?.credits ?? 10));
+  const creditPct = isPro ? 100 : (usedCredits / 10) * 100;
 
   const getBillingCycle = (user: any) => {
     if (!user) return "unknown";
@@ -68,17 +68,17 @@ export default function BillingPage() {
     return "unknown";
   };
 
-  const billingCycle    = getBillingCycle(userData);
-  const isYearlyPlan   = billingCycle === "yearly";
+  const billingCycle = getBillingCycle(userData);
+  const isYearlyPlan = billingCycle === "yearly";
   const currentPlanTag = isPro
     ? isYearlyPlan
       ? "Pro • Yearly subscription"
       : "Pro • Monthly subscription"
     : "Free";
 
-  const monthlyPrice    = 7.17;  // PKR
-  const yearlyPrice     = Math.round(monthlyPrice * 12 * 0.9); // 10% off
-  const displayedPrice  = isYearly ? (yearlyPrice / 12).toFixed(2) : monthlyPrice;
+  const monthlyPrice = 7.17;  // PKR
+  const yearlyPrice = Math.round(monthlyPrice * 12 * 0.9); // 10% off
+  const displayedPrice = isYearly ? (yearlyPrice / 12).toFixed(2) : monthlyPrice;
   const displayedPeriod = isYearly ? "/mo (billed yearly)" : "/month";
 
   const calculateResetTime = () => {
@@ -95,7 +95,7 @@ export default function BillingPage() {
     const priceId = isYearly
       ? import.meta.env.VITE_PADDLE_PRO_YEARLY_PRICE_ID
       : import.meta.env.VITE_PADDLE_PRO_PRICE_ID;
-     
+
     window.Paddle.Checkout.open({
       settings: { displayMode: "overlay", theme: "light", locale: "en" },
       items: [{ priceId, quantity: 1 }],
@@ -110,7 +110,7 @@ export default function BillingPage() {
       alert("Customer info not found. If you just upgraded, wait a moment and refresh.");
       return;
     }
-    const baseUrl  = import.meta.env.VITE_PADDLE_PORTAL_URL; // set in .env
+    const baseUrl = import.meta.env.VITE_PADDLE_PORTAL_URL; // set in .env
     const finalUrl = `${baseUrl}?customer_id=${userData.paddleCustomerId}`;
     window.open(finalUrl, "_blank");
   };
@@ -237,16 +237,21 @@ export default function BillingPage() {
             </div>
           )}
 
-          {/* Price */}
           <div className="text-3xl font-bold text-foreground mb-1">
-            USD {yearlyPrice.toLocaleString()}
-            <span className="text-base font-normal text-muted-foreground">{displayedPeriod}</span>
+            USD {isPro
+              ? isYearlyPlan
+                ? yearlyPrice.toLocaleString()
+                : monthlyPrice.toFixed(2)
+              : displayedPrice}
+
+            <span className="text-base font-normal text-muted-foreground">
+              {isPro
+                ? isYearlyPlan
+                  ? "/year"
+                  : "/month"
+                : displayedPeriod}
+            </span>
           </div>
-          {isYearly && isPro && (
-            <p className="text-xs text-muted-foreground mb-4">
-              USD {yearlyPrice.toLocaleString()} billed once a year
-            </p>
-          )}
 
           <p className="text-sm text-accent mb-5">
             {isPro ? "Enjoying full Pro access" : "Everything you need to grow on LinkedIn"}
