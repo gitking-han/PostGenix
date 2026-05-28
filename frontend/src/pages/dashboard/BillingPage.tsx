@@ -78,7 +78,7 @@ export default function BillingPage() {
 
   const monthlyPrice    = 7.17;  // PKR
   const yearlyPrice     = Math.round(monthlyPrice * 12 * 0.9); // 10% off
-  const displayedPrice  = isYearly ? Math.round(yearlyPrice / 12) : monthlyPrice;
+  const displayedPrice  = isYearly ? (yearlyPrice / 12).toFixed(2) : monthlyPrice;
   const displayedPeriod = isYearly ? "/mo (billed yearly)" : "/month";
 
   const calculateResetTime = () => {
