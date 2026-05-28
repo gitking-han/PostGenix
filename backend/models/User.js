@@ -29,6 +29,11 @@ const UserSchema = new mongoose.Schema({
     type: Date,
     default: null
   },
+  billingCycle: {
+    type: String,
+    enum: ['monthly', 'yearly', 'unknown'],
+    default: 'unknown'
+  },
 
   linkedin: {
     accessToken: { type: String, default: null },

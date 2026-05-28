@@ -7,6 +7,20 @@ const paddle = new Paddle(process.env.PADDLE_API_KEY, {
   environment: Environment.sandbox, // ← change to Environment.production when going live
 });
 
+const detectBillingCycle = (payload) => {
+  const interval = payload?.billing_cycle?.interval;
+  if (interval === 'year') return 'yearly';
+  if (interval === 'month') return 'monthly';
+
+  const nextBilling = payload?.current_billing_period?.ends_at;
+  if (nextBilling) {
+    const days = (new Date(nextBilling).getTime() - Date.now()) / (1000 * 60 * 60 * 24);
+    return days > 45 ? 'yearly' : 'monthly';
+  }
+
+  return 'unknown';
+};
+
 router.post('/webhook', async (req, res) => {
   const signature = req.headers['paddle-signature'] || '';
   const secret    = process.env.PADDLE_WEBHOOK_SECRET || '';
@@ -38,11 +52,27 @@ router.post('/webhook', async (req, res) => {
     ) {
       const isPro = status === 'active' || status === 'trialing';
 
+      const detectBillingCycle = (payload) => {
+        const interval = payload?.billing_cycle?.interval;
+        if (interval === 'year') return 'yearly';
+        if (interval === 'month') return 'monthly';
+
+        // Fallback: if next billing is far in the future, assume yearly.
+        const nextBilling = payload?.current_billing_period?.ends_at;
+        if (nextBilling) {
+          const days = (new Date(nextBilling).getTime() - Date.now()) / (1000 * 60 * 60 * 24);
+          return days > 45 ? 'yearly' : 'monthly';
+        }
+
+        return 'unknown';
+      };
+
       const updateData = {
         plan:               isPro ? 'pro' : 'free',
         subscriptionId:     subscriptionId,
         paddleCustomerId:   data.customer_id || data.customerId,
         subscriptionStatus: status,
+        billingCycle:       detectBillingCycle(data),
         // Keep track of when the current billing period ends
         planEndsAt:         data.current_billing_period?.ends_at
                               ? new Date(data.current_billing_period.ends_at)
@@ -73,14 +103,19 @@ router.post('/webhook', async (req, res) => {
         ? new Date(data.current_billing_period.ends_at)
         : null;
 
+      const updateFields = {
+        subscriptionStatus: 'canceled',
+        planEndsAt:         accessEndsAt, // ← keep this! don't set to null
+      };
+
+      const cycle = detectBillingCycle(data);
+      if (cycle !== 'unknown') {
+        updateFields.billingCycle = cycle;
+      }
+
       await User.findOneAndUpdate(
         { subscriptionId },
-        {
-          subscriptionStatus: 'canceled',
-          planEndsAt:         accessEndsAt, // ← keep this! don't set to null
-          // plan stays 'pro' — we downgrade via a scheduled job or on next login
-          // once Date.now() > planEndsAt (handled in creditManager / get-user route)
-        }
+        updateFields
       );
       console.log(`📉 Subscription canceled: ${subscriptionId} — access until ${accessEndsAt}`);
     }

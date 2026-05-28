@@ -6,15 +6,15 @@ import { CheckCircle2, Star, ArrowRight, Zap, HelpCircle, Linkedin } from "lucid
 const plans = [
   {
     name: "Free",
-    description: "Perfect for getting started on LinkedIn",
+    description: "Perfect for trying PostGenix and building your first LinkedIn workflow",
     price: "0",
     priceYearly: "0",
     popular: false,
     features: [
-      "5 AI-generated LinkedIn posts per day",
-      "Basic portfolio",
-      "Standard copy protection",
-      "LinkedIn-ready Publishing",
+      "10 AI-generated LinkedIn posts per day",
+      "Public portfolio page",
+      "Basic profile analysis",
+      "LinkedIn copy formatting",
       "Basic analytics",
     ],
     limitations: [
@@ -26,18 +26,19 @@ const plans = [
   },
   {
     name: "Pro",
-    description: "For serious LinkedIn creators",
+    description: "For creators who want unlimited AI writing plus advanced brand growth tools",
     price: "2,000",
-    priceYearly: "0",
+    priceYearly: "1,800",
     popular: true,
     features: [
       "Unlimited AI-generated LinkedIn posts",
-      "Premium portfolio with custom domain",
-      "Advanced theft protection",
-      "Post scheduling & analytics (Coming Soon)",
-      "Priority support",
-      "Remove PostGenix branding",
-      "Early Access to Social Media Integrations",
+      "Voice Fingerprint — posts in your unique tone",
+      "Brand Drift Alerts — stay on-niche automatically",
+      "Performance Analytics — know what's working",
+      "Content Gap Map — uncover missing topic opportunities",
+      "Direct publish to LinkedIn with formatting preserved",
+      "Advanced public portfolio",
+      "Priority AI access & High-Reasoning Mode",
     ],
     limitations: [],
     cta: "Upgrade to Pro",
@@ -113,11 +114,11 @@ export default function PricingPage() {
                     <span className="text-5xl font-bold text-foreground">PKR {plan.price}</span>
                     <span className="text-muted-foreground">/month</span>
                   </div>
-                  {/* {plan.priceYearly !== plan.price && (
+                  {plan.priceYearly !== plan.price && (
                     <p className="text-sm text-accent mt-2">
                       PKR {plan.priceYearly}/month with yearly billing (save 10%)
                     </p>
-                  )} */}
+                  )}
                 </div>
 
                 <div className="space-y-4 mb-8">
@@ -191,32 +192,38 @@ export default function PricingPage() {
 
                 <tr>
                   <td className="py-4 px-4 text-foreground text-center">AI LinkedIn posts</td>
-                  <td className="py-4 px-4 text-center text-muted-foreground">5/day</td>
+                  <td className="py-4 px-4 text-center text-muted-foreground">10/day</td>
                   <td className="py-4 px-4 text-center text-foreground font-medium">Unlimited</td>
                 </tr>
 
                 <tr>
-                  <td className="py-4 px-4 text-foreground text-center">Portfolio</td>
-                  <td className="py-4 px-4 text-center text-muted-foreground">Basic</td>
-                  <td className="py-4 px-4 text-center text-foreground font-medium">Premium + Custom Domain</td>
+                  <td className="py-4 px-4 text-foreground text-center">Voice Fingerprint</td>
+                  <td className="py-4 px-4 text-center text-muted-foreground">No</td>
+                  <td className="py-4 px-4 text-center text-foreground font-medium">Yes</td>
                 </tr>
 
                 <tr>
-                  <td className="py-4 px-4 text-foreground text-center">Copy protection</td>
-                  <td className="py-4 px-4 text-center text-muted-foreground">Standard</td>
+                  <td className="py-4 px-4 text-foreground text-center">Brand Drift Alerts</td>
+                  <td className="py-4 px-4 text-center text-muted-foreground">No</td>
+                  <td className="py-4 px-4 text-center text-foreground font-medium">Yes</td>
+                </tr>
+
+                <tr>
+                  <td className="py-4 px-4 text-foreground text-center">Performance Analytics</td>
+                  <td className="py-4 px-4 text-center text-muted-foreground">Basic</td>
                   <td className="py-4 px-4 text-center text-foreground font-medium">Advanced</td>
                 </tr>
 
                 <tr>
                   <td className="py-4 px-4 text-foreground text-center">LinkedIn publishing</td>
-                  <td className="py-4 px-4 text-center text-muted-foreground">No Sheduling</td>
-                  <td className="py-4 px-4 text-center text-foreground font-medium">Sheduling Comming Soon</td>
+                  <td className="py-4 px-4 text-center text-muted-foreground">Yes</td>
+                  <td className="py-4 px-4 text-center text-foreground font-medium">Direct publish with formatting preserved</td>
                 </tr>
 
                 <tr>
-                  <td className="py-4 px-4 text-foreground text-center">Analytics</td>
-                  <td className="py-4 px-4 text-center text-muted-foreground">Basic</td>
-                  <td className="py-4 px-4 text-center text-foreground font-medium">Advanced</td>
+                  <td className="py-4 px-4 text-foreground text-center">Portfolio</td>
+                  <td className="py-4 px-4 text-center text-muted-foreground">Public portfolio page</td>
+                  <td className="py-4 px-4 text-center text-foreground font-medium">Advanced public portfolio</td>
                 </tr>
 
                 <tr>

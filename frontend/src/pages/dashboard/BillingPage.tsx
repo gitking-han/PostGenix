@@ -55,6 +55,27 @@ export default function BillingPage() {
   const usedCredits     = Math.max(0, 10 - (userData?.credits ?? 10));
   const creditPct       = isPro ? 100 : (usedCredits / 10) * 100;
 
+  const getBillingCycle = (user: any) => {
+    if (!user) return "unknown";
+    if (user.billingCycle && (user.billingCycle === "monthly" || user.billingCycle === "yearly")) {
+      return user.billingCycle;
+    }
+    if (user.planEndsAt) {
+      const endsAt = new Date(user.planEndsAt);
+      const days = (endsAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24);
+      return days > 45 ? "yearly" : "monthly";
+    }
+    return "unknown";
+  };
+
+  const billingCycle    = getBillingCycle(userData);
+  const isYearlyPlan   = billingCycle === "yearly";
+  const currentPlanTag = isPro
+    ? isYearlyPlan
+      ? "Pro • Yearly subscription"
+      : "Pro • Monthly subscription"
+    : "Free";
+
   const monthlyPrice    = 7.17;  // PKR
   const yearlyPrice     = Math.round(monthlyPrice * 12 * 0.9); // 10% off
   const displayedPrice  = isYearly ? Math.round(yearlyPrice / 12) : monthlyPrice;
@@ -123,7 +144,7 @@ export default function BillingPage() {
             <div>
               <h2 className="font-semibold text-foreground">Current Plan</h2>
               <p className="text-muted-foreground text-sm">
-                {isLoading ? "Loading..." : `You're on the ${isPro ? "Pro" : "Free"} plan`}
+                {isLoading ? "Loading..." : currentPlanTag}
               </p>
             </div>
             <span className={cn(

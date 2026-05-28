@@ -4,6 +4,7 @@ const fetchuser = require("../middleware/fetchuser");
 const Post = require("../models/Post");
 const Profile = require("../models/Profile");
 const User = require("../models/User");
+const ensurePro = require("../middleware/ensurePro");
 const Anthropic = require("@anthropic-ai/sdk");
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -101,7 +102,7 @@ function calcBrandScore(niche, voice, frequency, variety) {
  * @desc    Returns overall brand score + weekly change
  * @access  Private
  */
-router.get("/brand-score", fetchuser, async (req, res) => {
+router.get("/brand-score", fetchuser, ensurePro, async (req, res) => {
   try {
     const [posts, profileDoc] = await Promise.all([
       Post.find({ user: req.user.id }),
@@ -155,7 +156,7 @@ router.get("/brand-score", fetchuser, async (req, res) => {
  * @desc    Returns the 4 brand intelligence bar values
  * @access  Private
  */
-router.get("/brand-intelligence", fetchuser, async (req, res) => {
+router.get("/brand-intelligence", fetchuser, ensurePro, async (req, res) => {
   try {
     const [posts, profileDoc] = await Promise.all([
       Post.find({ user: req.user.id }),
@@ -185,7 +186,7 @@ router.get("/brand-intelligence", fetchuser, async (req, res) => {
  *          hammering the AI API on every dashboard load.
  * @access  Private
  */
-router.get("/brand-drift", fetchuser, async (req, res) => {
+router.get("/brand-drift", fetchuser, ensurePro, async (req, res) => {
   try {
     const [user, profileDoc, recentPosts] = await Promise.all([
       User.findById(req.user.id),
@@ -281,7 +282,7 @@ Respond ONLY with a valid JSON object, no markdown, no explanation:
  *          Uses post type distribution, posting time patterns, and style gaps.
  * @access  Private
  */
-router.get("/insights", fetchuser, async (req, res) => {
+router.get("/insights", fetchuser, ensurePro, async (req, res) => {
   try {
     const [posts, profileDoc] = await Promise.all([
       Post.find({ user: req.user.id }).sort({ createdAt: -1 }),
@@ -393,7 +394,7 @@ router.get("/insights", fetchuser, async (req, res) => {
  *   - Post.linkedinPostId being set (saved by autoDraftToLinkedIn controller)
  *   - User.linkedin.accessToken being valid
  */
-router.get("/engagement", fetchuser, async (req, res) => {
+router.get("/engagement", fetchuser, ensurePro, async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
 
