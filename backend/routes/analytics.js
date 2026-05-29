@@ -541,10 +541,6 @@ router.get("/engagement", fetchuser, ensurePro, async (req, res) => {
   }
 });
 
-// ═══════════════════════════════════════════════════════════════════════════
-//  ADD THESE 3 ROUTES TO analytics.js BEFORE module.exports = router
-//  Also add `const axios = require('axios');` at the top if not already there.
-// ═══════════════════════════════════════════════════════════════════════════
 
 // ─── Route 6: Weekly Performance ────────────────────────────────────────────
 /**
