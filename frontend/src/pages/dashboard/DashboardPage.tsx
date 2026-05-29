@@ -54,10 +54,6 @@ function insightIcon(type: BrandInsight["type"]) {
   if (type === "warning")
     return <AlertCircle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />;
   return <Info className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />;
-}
-
-const API = (path: string) => `${import.meta.env.VITE_API_URL}${path}`;
-const authHeaders = () => ({ "auth-token": localStorage.getItem("authToken") || "" });
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function DashboardPage() {

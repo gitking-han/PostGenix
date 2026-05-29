@@ -18,8 +18,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { cn } from "@/lib/utils";
-
+import { cn } from "@/lib/utils";import { API, authHeaders } from "@/lib/api";
 /* ─── Types ──────────────────────────────────────────────────────────────── */
 interface WeeklyPerformance {
   week: string;
@@ -43,8 +42,6 @@ interface ContentGap {
 }
 
 /* ─── Helpers ────────────────────────────────────────────────────────────── */
-const API = (path: string) => `${import.meta.env.VITE_API_URL}${path}`;
-const authHeaders = () => ({ "auth-token": localStorage.getItem("authToken") || "" });
 
 function DifficultyBadge({ difficulty }: { difficulty: string }) {
   const colors = {
