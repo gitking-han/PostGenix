@@ -764,62 +764,6 @@ Respond ONLY with valid JSON — no markdown, no explanation:
   }
 });
 
-// ─── ADD TO User model (models/User.js): ────────────────────────────────────
-//
-//   contentGapsCache: {
-//     gaps: [{
-//       topic:      { type: String },
-//       reason:     { type: String },
-//       difficulty: { type: String },
-//     }],
-//     updatedAt: { type: Date, default: null },
-//   },
 
 module.exports = router;
 
-/*
-═══════════════════════════════════════════════════════════════
-  REQUIRED CHANGES BEFORE THIS FILE WORKS
-═══════════════════════════════════════════════════════════════
-
-1. REGISTER THIS ROUTE in your main app.js / server.js:
-   ─────────────────────────────────────────────────────
-   const analyticsRoutes = require('./routes/analytics');
-   app.use('/api/analytics', analyticsRoutes);
-
-2. UPDATE YOUR Post MODEL (models/Post.js):
-   ─────────────────────────────────────────────────────
-   Use the new Post.js file provided — it adds:
-   linkedinPostId, linkedinUrl, publishedAt, engagement{}
-
-3. UPDATE YOUR aiController.js:
-   ─────────────────────────────────────────────────────
-   Use the new aiController.js provided — it saves
-   linkedinPostId to Post after publishing.
-
-4. UPDATE WritePage.tsx handleAutoDraft():
-   ─────────────────────────────────────────────────────
-   Add postId: msg.id to the fetch body (see WritePage changes).
-
-5. ADD brandDriftCache TO YOUR User MODEL (models/User.js):
-   ─────────────────────────────────────────────────────
-   brandDriftCache: {
-     driftDetected: { type: Boolean, default: false },
-     driftTopic:    { type: String,  default: null  },
-     updatedAt:     { type: Date,    default: null  },
-   }
-
-6. MAKE SURE profile.preferences.niche IS SETTABLE:
-   ─────────────────────────────────────────────────────
-   Brand drift + niche consistency both depend on this.
-
-7. INSTALL ANTHROPIC SDK if not already:
-   ─────────────────────────────────────────────────────
-   npm install @anthropic-ai/sdk
-
-8. ADD TO YOUR .env:
-   ─────────────────────────────────────────────────────
-   ANTHROPIC_API_KEY=your_key_here
-
-═══════════════════════════════════════════════════════════════
-*/
