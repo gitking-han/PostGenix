@@ -20,9 +20,11 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader,
   AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { API, authHeaders, jsonHeaders } from "@/lib/api";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
+const API = (path: string) => `${import.meta.env.VITE_API_URL}${path}`;
+const authHeaders = () => ({ "auth-token": localStorage.getItem("authToken") || "" });
+const jsonHeaders = () => ({ ...authHeaders(), "Content-Type": "application/json" });
 // FIX 1: All API calls now use VITE_API_URL so they work in production.
 
 // ─── Industry options ──────────────────────────────────────────────────────────
