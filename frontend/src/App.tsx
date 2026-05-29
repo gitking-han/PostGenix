@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider, QueryCache } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import { useCurrentUser, hasActiveProAccess } from "@/hooks/useCurrentUser";
 
 // Public pages
 import LandingPage from "./pages/LandingPage";
@@ -110,6 +111,25 @@ const PublicRoute = ({ children }: RouteProps) => {
   return <>{children}</>;
 };
 
+const PaidRoute = ({ children }: RouteProps) => {
+  const { user, loading } = useCurrentUser();
+  const location = useLocation();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background text-sm text-muted-foreground">
+        Loading premium access...
+      </div>
+    );
+  }
+
+  if (!hasActiveProAccess(user)) {
+    return <Navigate to="/dashboard/billing" state={{ from: location }} replace />;
+  }
+
+  return <>{children}</>;
+};
+
 // --- CORRECTED APP COMPONENT ---
 const App = () => {
   
@@ -166,8 +186,8 @@ useEffect(() => {
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />
               <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
               <Route path="/dashboard/posts/:id" element={<ProtectedRoute><ViewPost /></ProtectedRoute>} />
-              <Route path="/dashboard/voice" element={<ProtectedRoute><VoicePage /></ProtectedRoute>} />
-              <Route path="/dashboard/analytics" element={<ProtectedRoute><AnalyticsPage /></ProtectedRoute>} />
+              <Route path="/dashboard/voice" element={<ProtectedRoute><PaidRoute><VoicePage /></PaidRoute></ProtectedRoute>} />
+              <Route path="/dashboard/analytics" element={<ProtectedRoute><PaidRoute><AnalyticsPage /></PaidRoute></ProtectedRoute>} />
 
 
               {/* --- 404 Route --- */}

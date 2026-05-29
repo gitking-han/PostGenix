@@ -2,6 +2,7 @@ import { Link, useLocation } from "react-router-dom";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/components/ThemeProvider";
+import { useCurrentUser, hasActiveProAccess } from "@/hooks/useCurrentUser";
 import {
   Ghost,
   LayoutDashboard,
@@ -32,9 +33,8 @@ const sidebarLinks = [
   { name: "Profile", href: "/dashboard/profile", icon: User },
   { name: "Settings", href: "/dashboard/settings", icon: Settings },
   { name: "Billing", href: "/dashboard/billing", icon: CreditCard },
-  { name: "Voice", href: "/dashboard/voice", icon: Mic },
-  { name: "Analytics", href: "/dashboard/analytics", icon: BarChart3 },
-
+  { name: "Voice", href: "/dashboard/voice", icon: Mic, paidOnly: true },
+  { name: "Analytics", href: "/dashboard/analytics", icon: BarChart3, paidOnly: true },
 ];
 
 interface DashboardLayoutProps {
@@ -47,6 +47,9 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const location = useLocation();
   const { theme, setTheme } = useTheme();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const { user } = useCurrentUser();
+  const isPro = hasActiveProAccess(user);
+  const visibleLinks = sidebarLinks.filter((link) => !link.paidOnly || isPro);
 
   const handleLogout = () => {
     localStorage.removeItem("authToken");
@@ -89,7 +92,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
         {/* Navigation */}
         <nav className="flex-1 p-4 space-y-1">
-          {sidebarLinks.map((link) => {
+          {visibleLinks.map((link) => {
             const isActive = location.pathname === link.href;
             return (
               <Link
@@ -183,7 +186,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           }`}
       >
         <nav className="p-4 space-y-1">
-          {sidebarLinks.map((link) => {
+          {visibleLinks.map((link) => {
             const isActive = location.pathname === link.href;
             return (
               <Link
