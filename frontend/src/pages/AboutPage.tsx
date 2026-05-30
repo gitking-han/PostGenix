@@ -7,7 +7,7 @@ const values = [
   {
     icon: Target,
     title: "Creator-First",
-    description: "Every feature I build starts with one question: does this help LinkedIn creators succeed?"
+    description: "Every feature I build starts with one question: does this help LinkedIn creators grow their presence?"
   },
   {
     icon: Heart,
@@ -16,13 +16,13 @@ const values = [
   },
   {
     icon: Shield,
-    title: "Protect What's Yours",
-    description: "Your content is your intellectual property. I build tools to keep it that way."
+    title: "Consistency Counts",
+    description: "Build trust by staying on-brand. Your audience deserves content that truly represents you."
   },
   {
     icon: Zap,
     title: "Speed Without Sacrifice",
-    description: "Create faster without compromising quality. Efficiency meets excellence."
+    description: "Create faster without compromising quality. Write more, grow faster, stay consistent."
   }
 ];
 
@@ -42,7 +42,7 @@ export default function AboutPage() {
               <span className="text-gradient"> Creators Worldwide</span>
             </h1>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              I started PostGenix as a solo project because I saw a problem: talented professionals spending hours crafting LinkedIn content, only to have it stolen or go unnoticed. I built this platform to change that.
+              I started PostGenix because I saw talented professionals spending hours crafting LinkedIn content with no consistency or strategy. I built this platform to help creators write better, publish faster, and grow their professional presence.
             </p>
           </div>
         </div>
@@ -57,10 +57,10 @@ export default function AboutPage() {
                 My Mission
               </h2>
               <p className="text-lg text-muted-foreground mb-6">
-                To democratize professional content creation by giving every LinkedIn creator the AI tools to write compelling posts and the security to protect their original work.
+                To help every LinkedIn creator build a consistent, authentic professional presence through AI-powered writing and advanced insights.
               </p>
               <p className="text-lg text-muted-foreground mb-8">
-                I believe your ideas deserve to be shared — and credited to you. That's why I built PostGenix as a solo project, combining AI writing assistance with content protection features.
+                I believe every professional has valuable insights to share. PostGenix helps you write more, stay on-brand, and grow your influence on LinkedIn—without the guesswork.
               </p>
               {/* <div className="flex items-center gap-4">
                 <Zap className="w-12 h-12 text-accent" />
@@ -72,7 +72,7 @@ export default function AboutPage() {
             </div>
             <div className="glass rounded-2xl p-8">
               <blockquote className="text-xl text-foreground italic mb-4">
-                "I wanted a way to help LinkedIn creators protect their content while saving time writing. PostGenix is my solo effort to make that happen."
+                "I wanted to help LinkedIn creators build authentic, consistent presence through AI—with all the tools they need to grow and succeed."
               </blockquote>
               <p className="text-muted-foreground">— Hanzala Rehman, Founder</p>
             </div>
@@ -110,10 +110,10 @@ export default function AboutPage() {
         <div className="section-container">
           <div className="glass rounded-2xl p-12 text-center">
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              Join My Mission
+              Ready to Grow on LinkedIn?
             </h2>
             <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-              Start creating protected LinkedIn content today with my solo-built platform
+              Start creating consistent, authentic LinkedIn content today. Write better, grow faster.
             </p>
             <Link to="/signup">
               <Button variant="accent" size="lg">

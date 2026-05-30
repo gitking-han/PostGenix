@@ -1,13 +1,13 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { PublicLayout } from "@/components/layout/PublicLayout";
-import { PenTool, Sparkles, Send, Shield, ArrowRight, CheckCircle2, Linkedin, Edit } from "lucide-react";
+import { PenTool, Sparkles, Send, ArrowRight, CheckCircle2, Linkedin, Edit, BarChart3 } from "lucide-react";
 
 const steps = [
   {
     number: "01",
     icon: PenTool,
-    title: "Enter Your LinkedIn Topic",
+    title: "Share Your Idea",
     description: "Tell our AI what you want to share — a career insight, business lesson, personal story, or industry take. Be as brief or detailed as you like.",
     details: [
       "Share your expertise or experience",
@@ -18,45 +18,45 @@ const steps = [
   {
     number: "02",
     icon: Sparkles,
-    title: "AI Drafts Your Post",
-    description: "Our LinkedIn-trained AI creates a post draft optimized for engagement. LinkedIn integration coming soon.",
+    title: "AI Crafts Your Post",
+    description: "Our LinkedIn-trained AI creates a post optimized for engagement in your unique voice.",
     details: [
       "Scroll-stopping opening hooks",
-      "Professional or casual tone options",
-      "Optimal post length for LinkedIn",
+      "Your unique tone and style",
+      "Optimal format for LinkedIn",
     ],
   },
   {
     number: "03",
     icon: Edit,
-    title: "Edit & Perfect",
-    description: "Use our distraction-free editor to refine your draft. Customize content and formatting before sharing.",
+    title: "Edit & Customize",
+    description: "Use our distraction-free editor to refine your draft. Customize content and formatting exactly how you want it.",
     details: [
-      "Rich text formatting",
+      "Rich text formatting options",
       "Add emojis and line breaks",
-      "Hashtag suggestions",
+      "Smart hashtag suggestions",
     ],
   },
   {
     number: "04",
     icon: Send,
-    title: "Prepare for LinkedIn",
-    description: "Copy, export, or schedule your post. Direct LinkedIn publishing is coming soon.",
+    title: "Publish Directly to LinkedIn",
+    description: "Post directly to LinkedIn with one click. Your formatting, tone, and style are perfectly preserved.",
     details: [
-      "Copy or post on LinkedIn instantly",
-      "Save to portfolio",
-      "Track post performance manually",
+      "One-click direct publishing",
+      "Formatting automatically preserved",
+      "Save for future reference",
     ],
   },
   {
     number: "05",
-    icon: Shield,
-    title: "Protected Forever",
-    description: "Your posts are automatically saved to your protected portfolio. Full ownership, full credit, always.",
+    icon: BarChart3,
+    title: "Track & Grow",
+    description: "Monitor engagement, track performance, and use insights to refine your strategy. Stay consistent with Brand Drift Alerts.",
     details: [
-      "Dynamic watermarks",
-      "Copy protection",
-      "Showcase your best work",
+      "Advanced engagement analytics",
+      "Performance insights",
+      "Brand consistency tracking",
     ],
   },
 ];
@@ -73,12 +73,12 @@ export default function HowItWorksPage() {
               <span className="text-sm font-medium text-foreground">Simple Process</span>
             </div>
             <h1 className="text-4xl lg:text-6xl font-bold text-foreground mb-6 animate-fade-in-up">
-              From Idea to Draft
+              From Idea to Published
               <br />
               <span className="text-gradient-accent">LinkedIn Post</span>
             </h1>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto animate-fade-in-up delay-200">
-              Five simple steps to draft, refine, and protect LinkedIn content. Direct LinkedIn publishing is coming soon.
+              Five simple steps to create, refine, and publish engaging LinkedIn content that grows your professional presence.
             </p>
           </div>
         </div>
@@ -144,11 +144,11 @@ export default function HowItWorksPage() {
         <div className="section-container">
           <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-6">
-              That's It. Simple.
+              That's It. Publish with Confidence.
             </h2>
             <p className="text-lg text-muted-foreground mb-10">
-              No complicated setup. No learning curve. Draft, refine, and protect your LinkedIn posts.
-              Direct publishing is coming soon. PostGenix helps you focus on growing your professional brand.
+              No complicated setup. No learning curve. Create, publish, and grow your LinkedIn presence consistently.
+              PostGenix helps you stay on-brand and focused on what matters—your professional growth.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link to="/signup">

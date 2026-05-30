@@ -28,50 +28,50 @@ const mainFeatures = [
   {
     icon: Sparkles,
     title: "AI LinkedIn Post Writer",
-    description: "Generate viral LinkedIn posts in seconds. Our AI is trained specifically on high-performing LinkedIn content.",
+    description: "Generate engaging LinkedIn posts in seconds. Our AI is trained specifically on high-performing LinkedIn content.",
     highlights: [
       "Attention-grabbing hooks that stop the scroll",
-      "Professional tone matching your voice",
-      "Hashtag suggestions for maximum reach",
+      "Tone that matches your unique voice",
+      "Smart hashtag suggestions for visibility",
     ],
   },
   {
     icon: Send,
-    title: "One-Click LinkedIn Publishing",
-    description: "Connect your LinkedIn account and publish posts with a single click. Schedule for optimal engagement times.",
+    title: "Direct LinkedIn Publishing",
+    description: "Publish posts directly to LinkedIn with a single click. No copying or pasting needed—formatting is preserved.",
     highlights: [
-      "Direct LinkedIn integration",
-      "Smart scheduling based on your audience comming soon",
-      "Queue management for consistent posting comming soon",
+      "One-click direct publishing",
+      "Formatting automatically preserved",
+      "Real-time LinkedIn integration",
     ],
   },
   {
-    icon: Shield,
-    title: "Content Protection",
-    description: "Multiple layers of security ensure your viral posts stay yours. Deter copycats and prove ownership.",
+    icon: TrendingUp,
+    title: "Voice Fingerprint & Consistency",
+    description: "Stay on-brand with AI that learns your unique voice. Brand Drift Alerts keep you focused on your niche.",
     highlights: [
-      "Dynamic watermarks",
-      "Copy protection",
-      "Screenshot deterrents",
+      "AI learns your unique tone",
+      "Automatic brand drift detection",
+      "Consistent messaging across posts",
     ],
   },
   {
-    icon: Globe,
-    title: "Secure Portfolio",
-    description: "Showcase your best LinkedIn posts publicly without fear. Professional portfolios with built-in protection.",
+    icon: BarChart3,
+    title: "Advanced Analytics & Profile Lab",
+    description: "Track what resonates with your audience. Profile Lab helps you optimize your professional presence.",
     highlights: [
-      "Custom portfolio URLs",
-      "Editorial design",
-      "Engagement analytics",
+      "Detailed engagement analytics",
+      "Profile optimization insights",
+      "Performance tracking over time",
     ],
   },
 ];
 
 const additionalFeatures = [
-  { icon: Hash, title: "Smart Hashtags", description: "AI-suggested hashtags for maximum LinkedIn reach" },
-  { icon: MessageSquare, title: "Hook Generator", description: "Create scroll-stopping opening lines" },
-  { icon: FileText, title: "Draft Management", description: "Organize and manage all your posts" },
-  { icon: Settings, title: "Custom Settings", description: "Full control over your experience" },
+  { icon: MessageSquare, title: "Smart Hook Generator", description: "AI-crafted opening lines that stop scrolls" },
+  { icon: FileText, title: "Draft Management", description: "Organize all your posts and manage variations" },
+  { icon: Settings, title: "Custom Settings", description: "Control every aspect of your AI experience" },
+  { icon: Eye, title: "Voice Preview", description: "See how posts sound in your unique voice before publishing" },
 ];
 
 export default function FeaturesPage() {
@@ -88,11 +88,11 @@ export default function FeaturesPage() {
             <h1 className="text-4xl lg:text-6xl font-bold text-foreground mb-6 animate-fade-in-up">
               Everything You Need for
               <br />
-              <span className="text-gradient-accent">LinkedIn Success</span>
+              <span className="text-gradient-accent">LinkedIn Growth</span>
             </h1>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-10 animate-fade-in-up delay-200">
-              From AI-powered LinkedIn post writing to secure portfolios, PostGenix gives you all the tools 
-              to grow your professional presence and protect your content.
+              From AI-powered post writing to advanced analytics, PostGenix gives you all the tools 
+              to grow your professional presence and stay consistent with your audience.
             </p>
           </div>
         </div>
@@ -149,7 +149,7 @@ export default function FeaturesPage() {
               And So Much More
             </h2>
             <p className="text-lg text-muted-foreground">
-              Every tool you need to dominate LinkedIn content creation.
+              Every tool you need to write, publish, and grow on LinkedIn.
             </p>
           </div>
 

@@ -38,9 +38,9 @@ const features = [
   },
   {
     icon: Lock,
-    title: "Private Content Portfolio",
+    title: "Profile Lab & Advanced Settings",
     description:
-      "Save, organize, and showcase your best LinkedIn posts in a secure personal portfolio you fully control.",
+      "Manage your professional profile, preferences, and content strategy all in one place with advanced controls.",
   },
 ];
 
@@ -82,9 +82,9 @@ const testimonials = [
   },
   {
     quote:
-      "The portfolio idea makes this more than just another AI writer.",
+      "The voice fingerprint and analytics features keep me consistent and on-brand.",
     author: "Beta Tester",
-    role: "Content Enthusiast",
+    role: "Content Creator",
     avatar: "BT",
   },
 ];
@@ -161,10 +161,10 @@ export default function LandingPage() {
         <div className="section-container">
           <div className="text-center max-w-2xl mx-auto mb-16">
             <h2 className="text-3xl lg:text-5xl font-bold text-foreground mb-4">
-              Built for LinkedIn Creators
+              Built for LinkedIn Consistency
             </h2>
             <p className="text-lg text-muted-foreground">
-              Everything you need to write, save, and refine LinkedIn content — without complexity.
+              AI-powered writing, voice consistency, and analytics to help you grow your professional presence on LinkedIn.
             </p>
           </div>
 
@@ -232,15 +232,15 @@ export default function LandingPage() {
           <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
             <div className="editorial-card">
               <h3 className="text-xl font-semibold mb-2">Free</h3>
-              <div className="text-4xl font-bold mb-6">PKR 0</div>
+              <div className="text-4xl font-bold mb-6">$0</div>
               <ul className="space-y-3 mb-8">
                 <li className="flex gap-2">
                   <CheckCircle2 className="w-5 h-5 text-accent" />
-                  <span>Limited AI-generated posts</span>
+                  <span>10 AI-generated posts per day</span>
                 </li>
                 <li className="flex gap-2">
                   <CheckCircle2 className="w-5 h-5 text-accent" />
-                  <span>Basic content portfolio</span>
+                  <span>Basic analytics and insights</span>
                 </li>
               </ul>
               <Link to="/signup">
@@ -255,19 +255,23 @@ export default function LandingPage() {
                 <Star className="w-3 h-3" /> Popular
               </div>
               <h3 className="text-xl font-semibold mb-2">Pro</h3>
-              <div className="text-4xl font-bold mb-6">PKR 2,000</div>
+              <div className="text-4xl font-bold mb-6">$7.17<span className="text-lg font-normal text-muted-foreground">/month</span></div>
               <ul className="space-y-3 mb-8">
                 <li className="flex gap-2">
                   <CheckCircle2 className="w-5 h-5 text-accent" />
-                  <span>Unlimited post generation</span>
+                  <span>Unlimited AI-generated posts</span>
                 </li>
                 <li className="flex gap-2">
                   <CheckCircle2 className="w-5 h-5 text-accent" />
-                  <span>Advanced portfolio features</span>
+                  <span>Voice Fingerprint and Brand Drift Alerts</span>
                 </li>
                 <li className="flex gap-2">
                   <CheckCircle2 className="w-5 h-5 text-accent" />
-                  <span>Early access to Social Media integrations</span>
+                  <span>Advanced analytics and Profile Lab</span>
+                </li>
+                <li className="flex gap-2">
+                  <CheckCircle2 className="w-5 h-5 text-accent" />
+                  <span>Direct LinkedIn publishing</span>
                 </li>
               </ul>
               <Link to="/signup">

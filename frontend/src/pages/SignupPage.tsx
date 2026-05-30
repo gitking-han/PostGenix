@@ -9,9 +9,9 @@ import { useTheme } from "@/components/ThemeProvider";
 import { toast } from "sonner";
 
 const benefits = [
-  "5 AI-generated LinkedIn posts per day",
-  "Secure portfolio with content protection",
-  "One-click LinkedIn publishing",
+  "10 AI-generated LinkedIn posts per day",
+  "Write in your unique voice with Voice Fingerprint",
+  "Basic analytics and insights",
   "No credit card required",
 ];
 
@@ -84,9 +84,9 @@ export default function SignupPage() {
         </div>
         <div className="relative z-10 text-primary-foreground max-w-md">
           <Ghost className="w-20 h-20 text-accent mb-8 animate-float" />
-          <h2 className="text-3xl font-bold mb-4">Start Growing on LinkedIn</h2>
+          <h2 className="text-3xl font-bold mb-4">Write Better LinkedIn Posts</h2>
           <p className="text-primary-foreground/80 mb-8">
-            Join thousands of LinkedIn creators who write viral posts and protect their content with PostGenix.
+            Join creators who write consistent, authentic content and grow their professional presence on LinkedIn with PostGenix.
           </p>
           <ul className="space-y-4">
             {benefits.map((benefit, index) => (

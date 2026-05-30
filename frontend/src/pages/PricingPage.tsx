@@ -12,14 +12,13 @@ const plans = [
     popular: false,
     features: [
       "10 AI-generated LinkedIn posts per day",
-      "Public portfolio page",
-      "Basic profile analysis",
-      "LinkedIn copy formatting",
       "Basic analytics",
+      "Basic profile management",
+      "Copy to LinkedIn formatting",
+      "Limited storage",
     ],
     limitations: [
-      "Limited storage",
-      "PostGenix branding on portfolio",
+      "PostGenix branding on your profile",
     ],
     cta: "Get Started Free",
     ctaVariant: "outline" as const,
@@ -27,17 +26,17 @@ const plans = [
   {
     name: "Pro",
     description: "For creators who want unlimited AI writing plus advanced brand growth tools",
-    price: "2,000",
-    priceYearly: "1,800",
+    price: "7.17",
+    priceYearly: "6.42",
     popular: true,
     features: [
       "Unlimited AI-generated LinkedIn posts",
       "Voice Fingerprint — posts in your unique tone",
       "Brand Drift Alerts — stay on-niche automatically",
-      "Performance Analytics — know what's working",
-      "Content Gap Map — uncover missing topic opportunities",
+      "Advanced Analytics — track what's working",
+      "Profile Lab — manage your professional presence",
       "Direct publish to LinkedIn with formatting preserved",
-      "Advanced public portfolio",
+      "Custom profile branding - remove PostGenix branding",
       "Priority AI access & High-Reasoning Mode",
     ],
     limitations: [],
@@ -111,12 +110,12 @@ export default function PricingPage() {
 
                 <div className="mb-8">
                   <div className="flex items-baseline gap-1">
-                    <span className="text-5xl font-bold text-foreground">PKR {plan.price}</span>
+                    <span className="text-5xl font-bold text-foreground">${plan.price}</span>
                     <span className="text-muted-foreground">/month</span>
                   </div>
                   {plan.priceYearly !== plan.price && (
                     <p className="text-sm text-accent mt-2">
-                      PKR {plan.priceYearly}/month with yearly billing (save 10%)
+                      ${plan.priceYearly}/month with yearly billing (save 10%)
                     </p>
                   )}
                 </div>
@@ -215,6 +214,12 @@ export default function PricingPage() {
                 </tr>
 
                 <tr>
+                  <td className="py-4 px-4 text-foreground text-center">Profile Lab</td>
+                  <td className="py-4 px-4 text-center text-muted-foreground">No</td>
+                  <td className="py-4 px-4 text-center text-foreground font-medium">Yes</td>
+                </tr>
+
+                <tr>
                   <td className="py-4 px-4 text-foreground text-center">LinkedIn publishing</td>
                   <td className="py-4 px-4 text-center text-muted-foreground">Yes</td>
                   <td className="py-4 px-4 text-center text-foreground font-medium">Direct publish with formatting preserved</td>
@@ -222,8 +227,8 @@ export default function PricingPage() {
 
                 <tr>
                   <td className="py-4 px-4 text-foreground text-center">Portfolio</td>
-                  <td className="py-4 px-4 text-center text-muted-foreground">Public portfolio page</td>
-                  <td className="py-4 px-4 text-center text-foreground font-medium">Advanced public portfolio</td>
+                  <td className="py-4 px-4 text-center text-muted-foreground">Basic</td>
+                  <td className="py-4 px-4 text-center text-foreground font-medium">Advanced</td>
                 </tr>
 
                 <tr>

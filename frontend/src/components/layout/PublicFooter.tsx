@@ -43,7 +43,7 @@ export function PublicFooter() {
               </span>
             </Link>
             <p className="text-muted-foreground text-sm mb-6 max-w-xs">
-              AI-powered LinkedIn post writing with secure portfolio protection. Own your words, protect your content.
+              AI-powered LinkedIn post writing for creators who want to write better, stay consistent, and grow their professional presence.
             </p>
             <div className="flex items-center gap-3">
               {footerLinks.social.map((item) => (
