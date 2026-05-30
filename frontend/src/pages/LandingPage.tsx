@@ -134,8 +134,7 @@ export default function LandingPage() {
             </h1>
 
             <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-10">
-              Create LinkedIn-ready posts with AI and store them in your personal content portfolio.
-              Direct LinkedIn publishing is coming soon.
+              Turn ideas into published LinkedIn content in minutes. Generate posts with AI, manage them in your content portfolio, and publish directly to LinkedIn.
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
